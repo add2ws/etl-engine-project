@@ -27,4 +27,67 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase> <!-- 绑定到package阶段，打包时自动复制 -->
+                        <goals>
+                            <goal>copy-dependencies</goal> <!-- 执行复制依赖的目标 -->
+                        </goals>
+                        <configuration>
+                            <!-- 依赖输出目录（相对于target目录） -->
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <!-- 仅复制runtime范围的依赖（排除test依赖） -->
+                            <includeScope>runtime</includeScope>
+                            <!-- 可选：排除传递依赖（仅复制直接依赖） -->
+                            <!-- <excludeTransitive>true</excludeTransitive> -->
+                            <!-- 可选：是否复制依赖的源文件（-sources.jar） -->
+                            <!-- <copySources>false</copySources> -->
+                            <!-- 可选：覆盖已存在的依赖包 -->
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 核心：配置可执行JAR，指定主类 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <!-- 生成的JAR包名称（可选） -->
+                    <finalName>etl-sample</finalName>
+                    <archive>
+                        <manifest>
+                            <!-- 必须：指定主类（包名+类名） -->
+                            <mainClass>io.github.add2ws.OracleToPG</mainClass>
+                            <!-- 可选：是否添加类路径（依赖外置时需开启） -->
+                            <addClasspath>true</addClasspath>
+                            <!-- 可选：依赖包的存放路径（外置依赖时指定） -->
+                            <classpathPrefix>lib/</classpathPrefix>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -30,7 +30,7 @@ public class TestCase1 {
         DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
-        SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info_2025_10");
+        SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
         upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("xh", "xh")));
         Pipe pipe = new Pipe(1000);

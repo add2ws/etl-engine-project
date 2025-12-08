@@ -1,5 +1,6 @@
 package org.liuneng.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.EtlLog;
 import org.liuneng.base.Node;
@@ -12,6 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@Slf4j
 public class DataflowHelper {
 
     private DataflowHelper() {}
@@ -28,7 +30,7 @@ public class DataflowHelper {
                 if (cursor < dataflow.getLogList().size()) {
                     EtlLog etlLog = dataflow.getLogList().get(cursor);
                     if (etlLog == null) {
-                        System.out.println("What's the !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                        log.error("日志为空");
                     }
                     handler.accept(etlLog);
                     cursor++;

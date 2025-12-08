@@ -31,7 +31,7 @@ public class DataSourceUtil {
         dataSource.setJdbcUrl(url);
         dataSource.setUsername("etl_base");
         dataSource.setPassword("etl_base");
-        dataSource.setMaximumPoolSize(4);
+//        dataSource.setMaximumPoolSize(4);
         return dataSource;
     }
 
@@ -69,7 +69,7 @@ public class DataSourceUtil {
         dataSource.setJdbcUrl(url);
         dataSource.setUsername("postgres");
         dataSource.setPassword("123");
-        dataSource.setMaximumPoolSize(4);
+//        dataSource.setMaximumPoolSize(4);
         return dataSource;
     }
 
