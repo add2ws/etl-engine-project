@@ -3,11 +3,14 @@ package org.liuneng.node;
 import lombok.Getter;
 import lombok.Setter;
 import org.liuneng.base.*;
+import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
+import org.liuneng.exception.NodeReadingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -44,50 +47,58 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMetri
 
 
     @Override
-    public Row read() throws Exception {
+    public Row read() throws NodeReadingException {
         if (startTime == 0) {
             startTime = System.currentTimeMillis();
         }
 
-        if (resultSet == null) {
-            resultSet = preparedStatement.executeQuery();
-            resultSet.setFetchSize(fetchSize);
-        }
+        try {
+            if (resultSet == null) {
+                resultSet = preparedStatement.executeQuery();
+                resultSet.setFetchSize(fetchSize);
+            }
 
-        long duration = System.currentTimeMillis() - startTime;
-        if (resultSet.next()) {
-            Map<String, Object> row = new HashMap<>();
-            for (String column : columns) {
-                Object value = resultSet.getObject(column);
-                if (charset != null && value instanceof String) {
-                    value = new String(((String) value).getBytes(charset));
+            long duration = System.currentTimeMillis() - startTime;
+            if (resultSet.next()) {
+                Map<String, Object> row = new HashMap<>();
+                for (String column : columns) {
+                    Object value = resultSet.getObject(column);
+                    if (charset != null && value instanceof String) {
+                        value = new String(((String) value).getBytes(charset));
+                    }
+                    row.put(column, value);
                 }
-                row.put(column, value);
+                processed ++;
+                if (duration > 0) {
+                    processingRate = (long) (processed / (duration/1000.0));
+                }
+                return Row.fromMap(row);
+            } else {
+                preparedStatement.close();
+                resultSet.close();
+                connection.close();
+                super.dataflowInstance.addInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration /1000));
+                return Row.ofEnd();
             }
-            processed ++;
-            if (duration > 0) {
-                processingRate = (long) (processed / (duration/1000.0));
-            }
-            return Row.fromMap(row);
-        } else {
-            preparedStatement.close();
-            resultSet.close();
-            connection.close();
-            super.dataflowInstance.addInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration /1000));
-            return Row.ofEnd();
+        } catch (SQLException | UnsupportedEncodingException e) {
+            throw new NodeReadingException(e);
         }
     }
 
     @Override
-    public String[] getInputColumns() throws SQLException {
-        if (columns == null) {
-            connection = dataSource.getConnection();
-            preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setFetchSize(fetchSize);
-            columns = new String[preparedStatement.getMetaData().getColumnCount()];
-            for (int i = 0; i < preparedStatement.getMetaData().getColumnCount(); i++) {
-                columns[i] = preparedStatement.getMetaData().getColumnLabel(i + 1);
+    public String[] getInputColumns() {
+        try {
+            if (columns == null) {
+                connection = dataSource.getConnection();
+                preparedStatement = connection.prepareStatement(sql);
+                preparedStatement.setFetchSize(fetchSize);
+                columns = new String[preparedStatement.getMetaData().getColumnCount()];
+                for (int i = 0; i < preparedStatement.getMetaData().getColumnCount(); i++) {
+                    columns[i] = preparedStatement.getMetaData().getColumnLabel(i + 1);
+                }
             }
+        } catch (SQLException e) {
+            throw new NodeException(e);
         }
         return columns;
     }
@@ -118,11 +129,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMetri
         startTime = System.currentTimeMillis();
         log.info("{}[{}] start initializing...", this.getClass().getSimpleName(), super.getId());
         super.prestart(dataflow);
-        try {
-            getInputColumns();
-        } catch (SQLException e) {
-            throw new NodePrestartException(e.getMessage());
-        }
+        getInputColumns();
         log.info("{}[{}] has been initialized.", this.getClass().getSimpleName(), super.getId());
     }
 

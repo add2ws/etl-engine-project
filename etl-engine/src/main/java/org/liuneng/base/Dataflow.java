@@ -5,12 +5,11 @@ import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.liuneng.exception.DataflowException;
-import org.liuneng.exception.DataflowPrestartException;
-import org.liuneng.exception.DataflowStoppingException;
-import org.liuneng.exception.NodeWritingException;
+import org.liuneng.exception.*;
 import org.liuneng.util.DataflowHelper;
 import org.liuneng.util.StrUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -112,7 +111,7 @@ public class Dataflow {
             log.info(s1);
             addInfoLog(s1);
 
-            long time = System.currentTimeMillis();
+            long currentStartTime = System.currentTimeMillis();
             int readTotal = 0;
 
             try {
@@ -137,7 +136,7 @@ public class Dataflow {
                             log.error(msg);
                             log.debug(msg, e);
                             this.addLogByNodeID(inputNode.asNode().getId(), LogLevel.ERROR, msg);
-                            Thread.sleep(5000);
+                            Thread.sleep(3000);
                             continue;
                         }
 
@@ -173,12 +172,13 @@ public class Dataflow {
 
                     readTotal++;
                     if (readTotal % processingThresholdLog == 0) {
-                        double elapsedSeconds = (System.currentTimeMillis() - time) / 1000.0;
+                        double elapsedSeconds = (System.currentTimeMillis() - currentStartTime) / 1000.0;
                         elapsedSeconds = (elapsedSeconds == 0 ? 0.001 : elapsedSeconds);
-                        String msg = String.format("输入节点[%s] 读取总量=%d, 当前速度=%.0f条/秒，平均速度%.0f条/秒", inputNode.asNode().getName(), readTotal, processingThresholdLog / elapsedSeconds, readTotal / ((System.currentTimeMillis() - startTime) / 1000.0));
+                        double avgSpeed = (double) readTotal / (System.currentTimeMillis() - startTime) * 1000.0;
+                        String msg = String.format("输入节点[%s] 读取总量=%d, 当前速度=%.0f条/秒，平均速度%.0f条/秒", inputNode.asNode().getName(), readTotal, processingThresholdLog / elapsedSeconds, avgSpeed);
                         log.info(msg);
                         this.addLogByNodeID(inputNode.asNode().getId(), LogLevel.INFO, msg);
-                        time = System.currentTimeMillis();
+                        currentStartTime = System.currentTimeMillis();
                     }
                 }
             } catch (InterruptedException e) {

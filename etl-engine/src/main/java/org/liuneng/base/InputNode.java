@@ -1,5 +1,8 @@
 package org.liuneng.base;
 
+import org.liuneng.exception.NodeException;
+import org.liuneng.exception.NodeReadingException;
+
 public interface InputNode {
 
     long getProcessed();
@@ -8,9 +11,9 @@ public interface InputNode {
 
     long getStartTime();
 
-    Row read() throws Exception;
+    Row read() throws NodeReadingException;
 
-    String[] getInputColumns() throws Exception;
+    String[] getInputColumns() throws NodeException;
 
     default Node asNode() {
         return (Node) this;

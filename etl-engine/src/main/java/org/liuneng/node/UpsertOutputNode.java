@@ -3,7 +3,7 @@ package org.liuneng.node;
 import lombok.Getter;
 import lombok.Setter;
 import org.liuneng.base.*;
-import org.liuneng.exception.DataflowException;
+import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.*;
@@ -93,24 +93,20 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
             startTime = System.currentTimeMillis();
         }
 
-        try {
-            if (row.isEnd()) {
-                commitBatch();
-                batchData.clear();
-                super.dataflowInstance.addInfoLog(String.format("UpsertOutputNode[%s] completed, processed(inserted/updated)=%d(%d/%d), time consuming=%ds.", this.getName(), processed, inserted, updated, (System.currentTimeMillis() - startTime) / 1000));
-                return;
-            }
+        if (row.isEnd()) {
+            commitBatch();
+            batchData.clear();
+            super.dataflowInstance.addInfoLog(String.format("UpsertOutputNode[%s] completed, processed(inserted/updated)=%d(%d/%d), time consuming=%ds.", this.getName(), processed, inserted, updated, (System.currentTimeMillis() - startTime) / 1000));
+            return;
+        }
 
-            if (batchData.size() < batchSize) {
-                batchData.add(row);
-            }
+        if (batchData.size() < batchSize) {
+            batchData.add(row);
+        }
 
-            if (batchData.size() == batchSize) {
-                commitBatch();
-                batchData.clear();
-            }
-        } catch (DataflowException e) {
-            throw new NodeWritingException(e.getMessage());
+        if (batchData.size() == batchSize) {
+            commitBatch();
+            batchData.clear();
         }
     }
 
@@ -127,7 +123,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
                 matchedRows = retrieveMatchRows();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
-                throw new DataflowException("Finding match rows error: " + e.getMessage());
+                throw new NodeWritingException("Finding match rows error: " + e.getMessage());
             }
             log.debug("查询出来了 {} 条", matchedRows.size());
 
@@ -137,20 +133,20 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
                 inserted = insertBatch(willInsertAndUpdateRows.getPartA());
             } catch (SQLException e) {
                 log.debug(e.getMessage(), e);
-                throw new DataflowException("Insert rows error: " + e.getMessage());
+                throw new NodeWritingException("Insert rows error: " + e.getMessage());
             }
             try {
                 updated = updateBatch(willInsertAndUpdateRows.getPartB());
             } catch (SQLException e) {
                 log.debug(e.getMessage(), e);
-                throw new DataflowException("Update rows error: " + e.getMessage());
+                throw new NodeWritingException("Update rows error: " + e.getMessage());
             }
         } else {
             try {
                 inserted = insertBatch(batchData);
             } catch (SQLException e) {
                 log.debug(e.getMessage(), e);
-                throw new DataflowException("Insert rows error: " + e.getMessage());
+                throw new NodeWritingException("Insert rows error: " + e.getMessage());
             }
         }
 
@@ -413,9 +409,13 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    public String[] getOutputColumns() throws Exception {
+    public String[] getOutputColumns() throws NodeException {
         if (columns == null) {
-            columns = DBUtil.lookupColumns(dataSource, table);
+            try {
+                columns = DBUtil.lookupColumns(dataSource, table);
+            } catch (SQLException e) {
+                throw new NodeException(e);
+            }
         }
         return columns;
     }
@@ -430,7 +430,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
                 autoMapTargetColumns();
             }
         } catch (Exception e) {
-            throw new NodePrestartException(e.getMessage());
+            throw new NodePrestartException(e);
         }
 
     }

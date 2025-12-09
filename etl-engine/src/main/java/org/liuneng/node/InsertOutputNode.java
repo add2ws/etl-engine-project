@@ -3,6 +3,7 @@ package org.liuneng.node;
 import lombok.Getter;
 import lombok.Setter;
 import org.liuneng.base.*;
+import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.DBUtil;
@@ -163,9 +164,13 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
 
 
     @Override
-    public String[] getOutputColumns() throws Exception {
+    public String[] getOutputColumns() {
         if (columns == null) {
-            columns = DBUtil.lookupColumns(dataSource, table);
+            try {
+                columns = DBUtil.lookupColumns(dataSource, table);
+            } catch (SQLException e) {
+                throw new NodeException(e);
+            }
         }
         return columns;
     }
@@ -178,7 +183,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
             try {
                 autoMapTargetColumns();
             } catch (Exception e) {
-                throw new NodePrestartException(e.getMessage());
+                throw new NodePrestartException(e);
             }
         }
     }
