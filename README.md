@@ -32,38 +32,26 @@ All features are abstracted as pluggable **Nodes**. Users can easily inherit bas
 The following code demonstrates how to quickly build an ETL task that **extracts data from Oracle** and **synchronizes (Upsert) it to PostgreSQL (Load)**.
 
 ```java
-import javax.sql.DataSource;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-// (Assumed package path)
-import com.example.etl.engine.core.Pipe;
-import com.example.etl.engine.core.Dataflow;
-import com.example.etl.engine.util.Tuple2;
+// 1. Get Data Sources
+DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
+DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
-public class EtlDemo {
-    public static void main(String[] args) {
-        // 1. Get Data Sources
-        DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
-        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+// 2. Create Input Node (Extract)
+SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
 
-        // 2. Create Input Node (Extract)
-        SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
+// 3. Create Upsert/Update Node (Load)
+// Batch size 1000
+UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
+// Set identity mapping for Insert or Update determination
+upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
 
-        // 3. Create Upsert/Update Node (Load)
-        // Batch size 1000
-        UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
-        // Set identity mapping for Insert or Update determination
-        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
+// 4. Create Pipe and Connect Nodes
+Pipe pipe = new Pipe(1000); // Pipe buffer size 1000
+pipe.connect(sqlInputNode, upsertOutputNode);
 
-        // 4. Create Pipe and Connect Nodes
-        Pipe pipe = new Pipe(1000); // Pipe buffer size 1000
-        pipe.connect(sqlInputNode, upsertOutputNode);
-
-        // 5. Start Dataflow
-        Dataflow dataflow = new Dataflow(sqlInputNode);
-        dataflow.syncStart(5, TimeUnit.MINUTES); // Set timeout
-    }
-}
+// 5. Start Dataflow
+Dataflow dataflow = new Dataflow(sqlInputNode);
+dataflow.syncStart(5, TimeUnit.MINUTES); // Set timeout
 ```
 
 -----

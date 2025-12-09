@@ -32,38 +32,27 @@
 以下代码展示了如何快速构建一个将 \*\*Oracle 数据（抽取）\*\*通过 \*\*Upsert 方式同步到 PostgreSQL（加载）\*\*的 ETL 任务。
 
 ```java
-import javax.sql.DataSource;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-// (假设的包路径)
-import com.example.etl.engine.core.Pipe;
-import com.example.etl.engine.core.Dataflow;
-import com.example.etl.engine.util.Tuple2;
 
-public class EtlDemo {
-    public static void main(String[] args) {
-        // 1. 获取数据源
-        DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
-        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+// 1. 获取数据源
+DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
+DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
-        // 2. 创建输入节点 (抽取 Extract)
-        SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
+// 2. 创建输入节点 (抽取 Extract)
+SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
 
-        // 3. 创建插入/更新节点 (加载 Load)
-        // 批量大小 1000
-        UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
-        // 设置唯一标识映射，用于判断 Insert 或 Update
-        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
+// 3. 创建插入/更新节点 (加载 Load)
+// 批量大小 1000
+UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
+// 设置唯一标识映射，用于判断 Insert 或 Update
+upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
 
-        // 4. 创建管道并连接节点
-        Pipe pipe = new Pipe(1000); // 管道缓存大小 1000
-        pipe.connect(sqlInputNode, upsertOutputNode);
+// 4. 创建管道并连接节点
+Pipe pipe = new Pipe(1000); // 管道缓存大小 1000
+pipe.connect(sqlInputNode, upsertOutputNode);
 
-        // 5. 启动数据流
-        Dataflow dataflow = new Dataflow(sqlInputNode);
-        dataflow.syncStart(5, TimeUnit.MINUTES); // 设置超时时间
-    }
-}
+// 5. 启动数据流
+Dataflow dataflow = new Dataflow(sqlInputNode);
+dataflow.syncStart(5, TimeUnit.MINUTES); // 设置超时时间
 ```
 
 -----
