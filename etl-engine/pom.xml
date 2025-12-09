@@ -89,9 +89,8 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
-            <version>6.2.13</version>
+            <version>5.3.39</version>
         </dependency>
-
 
         <dependency>
             <groupId>cn.hutool</groupId>
