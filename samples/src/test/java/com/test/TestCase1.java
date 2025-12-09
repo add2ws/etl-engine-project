@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Pipe;
+import org.liuneng.exception.DataflowException;
 import org.liuneng.node.SqlInputNode;
 import org.liuneng.node.UpsertOutputNode;
 import org.liuneng.util.DataflowHelper;
@@ -27,25 +28,26 @@ public class TestCase1 {
 
     @Test
     void oracleToPG() {
+        //获取数据源
         DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
+        //创建表输入节点
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
+
+        //创建插入/更新节点
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
-        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("xh", "xh")));
+        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
+
+        //创建管道
         Pipe pipe = new Pipe(1000);
+        //连接表输入和输出节点
         pipe.connect(sqlInputNode, upsertOutputNode);
 
+        //创建数据流实例
         Dataflow dataflow = new Dataflow(sqlInputNode);
-        dataflow.setProcessingThresholdLog(5000);
-        DataflowHelper.logListener(dataflow, etlLog -> {
-            System.out.println(etlLog.getMessage());
-        });
-        try {
-            dataflow.syncStart(5, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        //启动数据流
+        dataflow.syncStart(5, TimeUnit.MINUTES);
 
         try {
             Thread.sleep(1000 * 60);
