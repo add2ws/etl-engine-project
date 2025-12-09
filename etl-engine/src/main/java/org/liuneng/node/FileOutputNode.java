@@ -66,7 +66,7 @@ public class FileOutputNode extends Node implements OutputNode {
                 fileOutputStream.write((row.toString()+"\n").getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
-            throw new NodeWritingException(e.getMessage());
+            throw new NodeWritingException(e);
         }
 
         if (firstWrite) {
@@ -75,7 +75,7 @@ public class FileOutputNode extends Node implements OutputNode {
     }
 
     @Override
-    public String[] getOutputColumns() throws Exception {
+    public String[] getOutputColumns() {
         return new String[0];
     }
 
@@ -87,7 +87,7 @@ public class FileOutputNode extends Node implements OutputNode {
         try {
             fileOutputStream = new FileOutputStream(file);
         } catch (FileNotFoundException e) {
-            throw new NodePrestartException(e.getMessage());
+            throw new NodePrestartException(e);
         }
     }
 

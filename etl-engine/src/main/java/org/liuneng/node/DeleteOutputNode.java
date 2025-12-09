@@ -4,6 +4,7 @@ import org.liuneng.base.Dataflow;
 import org.liuneng.base.Node;
 import org.liuneng.base.OutputNode;
 import org.liuneng.base.Row;
+import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.DBUtil;
@@ -70,7 +71,7 @@ public class DeleteOutputNode extends Node implements OutputNode {
     }
 
     @Override
-    public String[] getOutputColumns() throws Exception {
+    public String[] getOutputColumns() throws NodeException {
         return new String[0];
     }
 
@@ -94,7 +95,7 @@ public class DeleteOutputNode extends Node implements OutputNode {
             String whereSql = this.columnsMapping.stream().map(tuple2 -> tuple2.getPartB() + "=?").collect(Collectors.joining(" and "));
             preparedStatement = dataSource.getConnection().prepareStatement(String.format("delete from %s where %s", this.table, whereSql));
         } catch (SQLException | NodePrestartException e) {
-            throw new NodePrestartException(e.getMessage());
+            throw new NodePrestartException(e);
         }
     }
 

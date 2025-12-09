@@ -4,6 +4,8 @@ import org.liuneng.base.OutputNode;
 import org.liuneng.base.InputNode;
 import org.liuneng.base.Node;
 import org.liuneng.base.Row;
+import org.liuneng.exception.NodeException;
+import org.liuneng.exception.NodeReadingException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.Tuple2;
 
@@ -18,8 +20,12 @@ public abstract class ValueConvertNode extends Node implements InputNode, Output
 
 
     @Override
-    public Row read() throws Exception {
-        return list.take();
+    public Row read() throws NodeReadingException {
+        try {
+            return list.take();
+        } catch (InterruptedException e) {
+            throw new NodeReadingException(e);
+        }
     }
 
     @Override
@@ -28,7 +34,7 @@ public abstract class ValueConvertNode extends Node implements InputNode, Output
         try {
             list.put(row);
         } catch (InterruptedException e) {
-            throw new NodeWritingException(e.getMessage());
+            throw new NodeWritingException(e);
         }
     }
 
@@ -45,8 +51,8 @@ public abstract class ValueConvertNode extends Node implements InputNode, Output
     }
 
     @Override
-    public String[] getInputColumns() throws Exception {
-        return this.getBeforeNode().orElseThrow(() -> new Exception("无法获得上个节点的列")).getInputColumns();
+    public String[] getInputColumns() throws NodeException {
+        return this.getBeforeNode().orElseThrow(() -> new NodeException("无法获得上个节点的列")).getInputColumns();
     }
 
     @Override
