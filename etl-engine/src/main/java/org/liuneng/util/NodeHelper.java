@@ -12,7 +12,7 @@ public class NodeHelper {
 
     private final static Logger log = LoggerFactory.getLogger(NodeHelper.class);
 
-    public static String[] getUpstreamColumns(InputNode inputNode) throws Exception {
+    public static String[] getUpstreamColumns(InputNode inputNode) {
         Set<String> columns = new LinkedHashSet<>();
         InputNode current = inputNode;
         do {

@@ -160,7 +160,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         insertingRate = (long) (inserted / elapsedSeconds);
         updatingRate = (long) (updated / elapsedSeconds);
         processingRate = (long) (batchData.size() / elapsedSeconds);
-        log.info("提交成功！，总量(新增/更新)={}({}/{}) 速度={}", batchData.size(), inserted, updated, this.processingRate);
+        log.info("提交成功！，总量(新增/更新)={}({}/{}) 速度={}条/秒", batchData.size(), inserted, updated, this.processingRate);
     }
 
 //    private PreparedStatement findMatchRowsPreparedstatement = null;
@@ -195,7 +195,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         log.debug("Find match rows sql: {}", sql);
 
         long startTime = System.currentTimeMillis();
-        log.debug("准备检索匹配数据，待匹配条数: {}", batchData.size());
+        log.info("准备检索匹配数据，待匹配条数: {}", batchData.size());
 
         try (PreparedStatement findMatchRowsPreparedstatement = connection.prepareStatement(sql)) {
             int argIndex = 1;
@@ -211,7 +211,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
                 Map<String, Object> mapRow = DBUtil.mapRow(rs);
                 result.add(mapRow);
             }
-            log.debug("匹配数据检索完成，共检索出{}条数据，耗时: {} ms", result.size(), System.currentTimeMillis() - startTime);
+            log.info("匹配数据检索完成，共检索出{}条数据，耗时: {} ms", result.size(), System.currentTimeMillis() - startTime);
             return result;
         }
 
@@ -270,7 +270,6 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         return true;
     }
 
-    //    private String insertSql = null;
     private PreparedStatement insertPreparedStatement = null;
 
     private int insertBatch(List<Row> rows) throws SQLException {
@@ -300,7 +299,6 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         return inserted.length;
     }
 
-    //    private String updateSql = null;
     private PreparedStatement updatePreparedStatement = null;
 
     private int updateBatch(List<Row> rows) throws SQLException {
@@ -320,7 +318,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
             log.debug("Update sql: {}", updateSql);
         }
         long startTime = System.currentTimeMillis();
-        log.info("待更新数据：{}条", rows.size());
+        log.debug("待更新数据：{}条", rows.size());
         for (Row row : rows) {
             int i = 1;
             for (Tuple3<String, String, UpsertTag> colMap : columnsMapping) {
@@ -334,7 +332,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         }
 
         int[] updated = updatePreparedStatement.executeBatch();
-        log.info("数据更新完成，耗时：{} ms", System.currentTimeMillis() - startTime);
+        log.debug("数据更新完成，耗时：{} ms", System.currentTimeMillis() - startTime);
         return updated.length;
     }
 
@@ -348,10 +346,10 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
 
-    public List<Tuple3<String, String, UpsertTag>> autoMapTargetColumns() throws Exception {
+    public List<Tuple3<String, String, UpsertTag>> autoMapTargetColumns() {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
         long time = System.currentTimeMillis();
-        InputNode from = this.getBeforePipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).getFrom().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
+        InputNode from = this.getBeforePipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).getFrom().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
         String[] sourceColumns = NodeHelper.getUpstreamColumns(from);
 
         this.columnsMapping.clear();
@@ -364,7 +362,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
             }
         }
         if (this.columnsMapping.isEmpty()) {
-            throw new Exception("自动匹配列名失败！没有一个列能匹配上。");
+            throw new NodeException("自动匹配列名失败！没有一个列能匹配上。");
         }
         log.info("{}自动匹配列完成，耗时{}ms", this.getId(), System.currentTimeMillis() - time);
         return this.columnsMapping;
@@ -429,7 +427,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
             if (columnsMapping.isEmpty()) {
                 autoMapTargetColumns();
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new NodePrestartException(e);
         }
 

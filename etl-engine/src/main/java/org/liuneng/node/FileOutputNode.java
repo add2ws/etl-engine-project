@@ -22,11 +22,15 @@ public class FileOutputNode extends Node implements OutputNode {
 
     private FileOutputStream fileOutputStream;
 
-    private String format;
+    private Format format;
+
+    public enum Format {
+        JSON, CSV, TXT
+    }
 
     private boolean firstWrite = true;
 
-    public FileOutputNode(String filePath, String format) {
+    public FileOutputNode(String filePath, Format format) {
         this.filePath = filePath;
         this.format = format;
     }
@@ -51,7 +55,7 @@ public class FileOutputNode extends Node implements OutputNode {
     public void write(Row row) throws NodeWritingException {
 
         try {
-            if ("JSON".equalsIgnoreCase(format)) {
+            if (format == Format.JSON) {
                 if (firstWrite) {
                     fileOutputStream.write('[');
                 }

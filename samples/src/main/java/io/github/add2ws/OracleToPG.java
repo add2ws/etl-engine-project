@@ -20,7 +20,6 @@ public class OracleToPG {
     static void oracleToPG() {
         DataSource dataSourceOracle = DataSourceUtil.getOracleDataSourcePool();
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSourcePool();
-        log.info("使用连接池。。。。。。。。。。。。。。。。。。。。。。。。。。");
 
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from etl_base.t_resident_info where 1=1 and rownum<= 200000", 1000);
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
@@ -30,7 +29,7 @@ public class OracleToPG {
         pipe.connect(sqlInputNode, upsertOutputNode);
 
         Dataflow dataflow = new Dataflow(sqlInputNode);
-        dataflow.setProcessingThresholdLog(5000);
+        dataflow.setProcessingThresholdLog(100);
 //        DataflowHelper.logListener(dataflow, etlLog -> {
 //            System.out.println(etlLog.getMessage());
 //        });

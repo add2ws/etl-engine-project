@@ -78,7 +78,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     private void commitBatch() {
         if (batchData.isEmpty()) return;
 
-        long time = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         if (insertSql == null) {
             String columnsSql = columnsMapping.stream().map(Tuple2::getPartB).collect(Collectors.joining(","));
             String valuesSql = String.join(",", Collections.nCopies(columnsMapping.size(), "?"));
@@ -101,10 +101,13 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
             }
         });
 
-        long elapsedMillis = System.currentTimeMillis() - time;
-        if (elapsedMillis == 0) elapsedMillis = 1;
-        processingRate = batchSize / elapsedMillis * 1000;
-        log.debug("提交成功！，总量={} 速度={}", batchData.size(), processingRate);
+        long elapsedMillis = System.currentTimeMillis() - startTime;
+        if (elapsedMillis == 0) {
+            processingRate = -1;
+        } else {
+            processingRate = (long) (1.0 * batchSize / elapsedMillis * 1000);
+        }
+        log.info("提交成功！，总量={}条 速度={}条/秒", batchData.size(), processingRate);
         processed += batchData.size();
     }
 

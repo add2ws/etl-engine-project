@@ -5,7 +5,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -79,7 +78,7 @@ public class Pipe {
         isValid = valid;
     }
 
-    public void write(Row row) throws InterruptedException {
+    public void beWritten(Row row) throws InterruptedException {
         if (startTime == 0) {
             startTime = System.currentTimeMillis();
         }
@@ -89,7 +88,7 @@ public class Pipe {
         }
     }
 
-    public Row read() throws InterruptedException {
+    public Row beRead() throws InterruptedException {
         return bufferQueue.take();
     }
 

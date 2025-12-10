@@ -21,6 +21,19 @@ public class DataSourceUtil {
         return dataSource;
     }
 
+    public static DataSource getMySqlDataSource() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        String host = "127.0.0.1";
+        int port = 3308;
+        String sid = "etl_base";
+        String url = String.format("jdbc:mysql://@%s:%d/%s", host, port, sid);
+        dataSource.setUrl(url);
+        dataSource.setUsername("root");
+        dataSource.setPassword("root");
+        return dataSource;
+    }
+
     public static DataSource getOracleDataSourcePool() {
         HikariDataSource dataSource = new HikariDataSource();
         dataSource.setDriverClassName("oracle.jdbc.OracleDriver");

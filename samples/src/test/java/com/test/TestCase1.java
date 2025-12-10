@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Pipe;
 import org.liuneng.exception.DataflowException;
+import org.liuneng.node.FileOutputNode;
+import org.liuneng.node.InsertOutputNode;
 import org.liuneng.node.SqlInputNode;
 import org.liuneng.node.UpsertOutputNode;
 import org.liuneng.util.DataflowHelper;
@@ -25,6 +27,57 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class TestCase1 {
+
+    @Test
+    void pp() {
+        long s = (long) (1.0 * 500 / 3832 * 1000);
+
+        System.out.println(s);
+    }
+
+    @Test
+    void PGToFile() {
+        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+
+        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info limit 10033");
+
+        new FileOutputNode("E:/output.json", "");
+
+    }
+
+    @Test
+    void MysqlAndPG() {
+        //获取数据源
+        DataSource dataSourceMysql = DataSourceUtil.getMySqlDataSource();
+        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+
+        //创建表输入节点
+        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info limit 20007");
+
+        //创建插入/更新节点
+//        UpsertOutputNode outputNode = new UpsertOutputNode(dataSourceMysql, "t_resident_info", 500);
+//        outputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("XH", "XH")));
+
+        InsertOutputNode outputNode = new InsertOutputNode(dataSourceMysql, "t_resident_info", 500);
+
+
+        //创建管道
+        Pipe pipe = new Pipe(10000);
+        //连接表输入和输出节点
+        pipe.connect(sqlInputNode, outputNode);
+
+        //创建数据流实例
+        Dataflow dataflow = new Dataflow(sqlInputNode);
+        dataflow.setProcessingThresholdLog(10000);
+        //启动数据流
+        dataflow.syncStart(5, TimeUnit.MINUTES);
+
+        try {
+            Thread.sleep(1000 * 60);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     void oracleToPG() {
