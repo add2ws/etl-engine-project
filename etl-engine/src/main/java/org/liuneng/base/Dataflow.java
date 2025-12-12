@@ -311,7 +311,7 @@ public class Dataflow {
     }
 
     public void syncStart() throws DataflowException {
-        syncStart(1, TimeUnit.DAYS);
+        syncStart(999, TimeUnit.DAYS);
     }
 
 

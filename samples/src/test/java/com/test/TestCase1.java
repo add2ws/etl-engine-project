@@ -6,10 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Pipe;
 import org.liuneng.exception.DataflowException;
-import org.liuneng.node.FileOutputNode;
-import org.liuneng.node.InsertOutputNode;
-import org.liuneng.node.SqlInputNode;
-import org.liuneng.node.UpsertOutputNode;
+import org.liuneng.node.*;
 import org.liuneng.util.DataflowHelper;
 import org.liuneng.util.Tuple2;
 
@@ -38,11 +35,24 @@ public class TestCase1 {
     @Test
     void PGToFile() {
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info order by xh limit 103");
 
-        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info limit 10033");
+        FileOutputNode fileOutputNode = new FileOutputNode("E:/output.csv", FileOutputNode.Format.CSV);
 
-        new FileOutputNode("E:/output.json", "");
+        Pipe pipe = new Pipe(1000);
+        pipe.connect(sqlInputNode,fileOutputNode);
 
+        Dataflow dataflow = new Dataflow(sqlInputNode);
+
+        dataflow.syncStart();
+
+    }
+
+    @Test
+    void print1() throws SQLException {
+        DataSource oracleDataSource = DataSourceUtil.getOracleDataSource();
+        Connection connection = oracleDataSource.getConnection();
+        System.out.println("connected !!!!!");
     }
 
     @Test

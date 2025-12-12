@@ -13,9 +13,7 @@ public class Row {
 
     private final Map<String, Object> data = new LinkedCaseInsensitiveMap<>();
 
-    private Row() {
-
-    }
+    private Row() {}
 
     public static Row ofEnd() {
         Row row = new Row();

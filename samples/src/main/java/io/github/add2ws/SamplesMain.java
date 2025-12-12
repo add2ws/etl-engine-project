@@ -40,7 +40,7 @@ public class SamplesMain {
         DataSource duckdb = DataSourceUtil.getDuckDBDataSource("E:/duck.db");
 
         SqlInputNode sqlReaderNode_oracle = new SqlInputNode(oracle, sql, 100);
-        FileOutputNode fileWriterNode = new FileOutputNode("D:/表数据.txt", "json");
+        FileOutputNode fileWriterNode = new FileOutputNode("D:/表数据.txt", FileOutputNode.Format.JSON);
 
 //        InsertOutputNode insertWriterNode_pg = new InsertOutputNode(postgresPool, "t_resident_info", 200);
 //        insertWriterNode_pg.setDeleteSql("truncate table t_resident_info");

@@ -16,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SqlInputNode extends Node implements InputNode, DataProcessingMetrics {
@@ -60,7 +61,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMetri
 
             long duration = System.currentTimeMillis() - startTime;
             if (resultSet.next()) {
-                Map<String, Object> row = new HashMap<>();
+                Map<String, Object> row = new LinkedHashMap<>();
                 for (String column : columns) {
                     Object value = resultSet.getObject(column);
                     if (charset != null && value instanceof String) {
