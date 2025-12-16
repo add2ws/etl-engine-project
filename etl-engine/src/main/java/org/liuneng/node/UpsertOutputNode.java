@@ -81,11 +81,8 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     @Getter
     private long updatingRate = 0;
 
-
     @Getter
     private long startTime;
-
-    private List<Object> uncleanData = new ArrayList<>();
 
     @Override
     public void write(Row row) throws NodeWritingException {
@@ -96,7 +93,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         if (row.isEnd()) {
             commitBatch();
             batchData.clear();
-            super.dataflowInstance.addInfoLog(String.format("UpsertOutputNode[%s] completed, processed(inserted/updated)=%d(%d/%d), time consuming=%ds.", this.getName(), processed, inserted, updated, (System.currentTimeMillis() - startTime) / 1000));
+            super.writeInfoLog(String.format("UpsertOutputNode[%s] completed, processed(inserted/updated)=%d(%d/%d), time consuming=%ds.", this.getName(), processed, inserted, updated, (System.currentTimeMillis() - startTime) / 1000));
             return;
         }
 

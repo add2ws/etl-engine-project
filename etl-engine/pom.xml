@@ -12,7 +12,7 @@
 
     <groupId>io.github.add2ws</groupId>
     <artifactId>etl-engine</artifactId>
-    <version>2.1.0-BETA</version>
+    <version>2.2.0-BETA</version>
     <name>ETL Engine</name>
     <url>https://github.com/add2ws/etl-engine</url>
 

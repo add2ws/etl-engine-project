@@ -35,7 +35,7 @@ public class TestCase1 {
     @Test
     void PGToFile() {
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
-        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info order by xh limit 103");
+        SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info order by xh limit 12333");
 
         FileOutputNode fileOutputNode = new FileOutputNode("E:/output.csv", FileOutputNode.Format.CSV);
 
@@ -49,10 +49,25 @@ public class TestCase1 {
     }
 
     @Test
-    void print1() throws SQLException {
+    void oracleToPGAndFile() {
         DataSource oracleDataSource = DataSourceUtil.getOracleDataSource();
-        Connection connection = oracleDataSource.getConnection();
-        System.out.println("connected !!!!!");
+        SqlInputNode sqlInputNode = new SqlInputNode(oracleDataSource, "select * from etl_base.t_resident_info where rownum<=50000 order by id");
+
+        DataSource postgresDataSource = DataSourceUtil.getPostgresDataSource();
+        UpsertOutputNode upsertOutputNode = new UpsertOutputNode(postgresDataSource, "public.t_resident_info", 1000);
+        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID","ID")));
+
+        FileOutputNode fileOutputNode = new FileOutputNode("E:/output_" + System.currentTimeMillis() + ".csv", FileOutputNode.Format.CSV);
+
+        Pipe pipe = new Pipe(1000);
+        pipe.connect(sqlInputNode,upsertOutputNode);
+
+        Pipe pipe_2 = new Pipe(1000);
+        pipe_2.connect(sqlInputNode,fileOutputNode);
+
+        Dataflow dataflow = new Dataflow(sqlInputNode);
+        dataflow.syncStart();
+
     }
 
     @Test
@@ -137,10 +152,6 @@ public class TestCase1 {
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
         String sql = "select * from main.t_resident_info where 1=1 limit 20000 ";
-//        String sql = "SELECT xh::text, ywbh, llywlb, llywlbbm, sjywlb, yywbh, jyzt, jyywzmzsmc, jyywzmzsmcbm, jyywzmzsh, djywzmzsmc, djywzmzsmcbm, djywzmzsh, jyzlb, jyzlbbm, jyzqc, jyzzjmc, jyzzjmcbm, jyzzjhm, jyzxz, jyzxzbm, jyzhj, jyzhjxzqh, bdcdyh, fwbm, fwzt, xzqhdm, qx, xzjdb, jjxzqh, jjxzqhdm, ljx, xq, lh, szqsc, szzzc, myc, dy, fh, fwzl, hxjs, hxjsbm, hxjg, hxjgbm, fwcx, fwcxbm, jzmj, tnjzmj, gtjzmj, ghyt, jzjg, jzjgbm, fwyt, fwytbm, fwxz, fwxzbm, fwlx, fwlxbm, gyfs, gyfsbm, szfe, cjje, fklx, fklxbm, dkfs, dkfsbm, htsxrq, ywbjsj, ywbjrsfzh, ywblszxzqhdm, cityno, zlsj, zlid, del_status, insert_time, jfrq, sfk, ysxkzh, ybdczh, xhs\n" +
-//                "FROM t_resident_info where 1=1 " +
-//                "and substr(ywbjsj, 1, 10) > '2025-11-02'" +
-//                "limit 124";
 
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceDuck, sql);
         sqlInputNode.setFetchSize(1000);

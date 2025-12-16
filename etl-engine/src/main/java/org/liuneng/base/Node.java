@@ -1,20 +1,17 @@
 package org.liuneng.base;
 
+import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.util.StrUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class Node {
 
     @Setter
-    @Getter
     private String id;
 
     @Setter
@@ -23,6 +20,11 @@ public abstract class Node {
     protected Dataflow dataflowInstance;
 
     private Pipe beforePipe;
+
+    public Node() {
+        this.id = "Node-"+IdUtil.fastSimpleUUID();
+        this.name = this.getClass().getSimpleName();
+    }
 
     @Getter
     private final List<Pipe> afterPipes = new ArrayList<>();
@@ -60,8 +62,12 @@ public abstract class Node {
         afterPipes.add(pipe);
     }
 
+    public String getId() {
+        return StrUtil.isBlank(id) ? "" : id;
+    }
+
     public String getName() {
-        return StrUtil.isBlank(name) ? id : name;
+        return StrUtil.isBlank(name) ? this.getClass().getSimpleName() : name;
     }
 
     protected Dataflow getDataflowInstance() {
@@ -89,4 +95,11 @@ public abstract class Node {
 
     protected abstract void onDataflowStop();
 
+    protected void writeInfoLog(String message) {
+        this.dataflowInstance.writeLogOfNode(this, LogLevel.INFO, message, null);
+    }
+
+    protected void writeErrorLog(String message) {
+        this.dataflowInstance.writeLogOfNode(this, LogLevel.ERROR, message, null);
+    }
 }

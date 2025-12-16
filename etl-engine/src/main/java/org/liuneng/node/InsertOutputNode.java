@@ -65,7 +65,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
             batchData.add(row);
         } else {
             commitBatch();
-            super.dataflowInstance.addInfoLog(String.format("InsertOutputNode[%s] completed, processed=%d, time consuming=%ds.", this.getName(), processed, (System.currentTimeMillis() - startTime)/1000));
+            super.writeInfoLog(String.format("InsertOutputNode[%s] completed, processed=%d, time consuming=%ds.", this.getName(), processed, (System.currentTimeMillis() - startTime)/1000));
         }
 
         if (batchData.size() == batchSize) {

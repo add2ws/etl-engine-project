@@ -11,17 +11,13 @@ public class DataSourceUtil {
     public static DataSource getOracleDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("oracle.jdbc.OracleDriver");
-        String host = "ppppp";
-//        String host = "127.0.0.1";
+        String host = "127.0.0.1";
         int port = 1521;
         String sid = "orcl";
         String url = String.format("jdbc:oracle:thin:@%s:%d:%s", host, port, sid);
         dataSource.setUrl(url);
         dataSource.setUsername("etl_base");
         dataSource.setPassword("etl_base");
-        Properties properties = new Properties();
-        properties.setProperty("oracle.jdbc.ReadTimeout", "500");
-        dataSource.setConnectionProperties(properties);
         return dataSource;
     }
 

@@ -25,13 +25,17 @@ public class FileOutputNode extends Node implements OutputNode {
 
     private FileOutputStream fileOutputStream;
 
-    private Format format;
+    private final Format format;
+
+    private long processed = 0;
 
     public enum Format {
         JSON, CSV, TXT
     }
 
     private boolean firstWrite = true;
+
+
 
     public FileOutputNode(String filePath, Format format) {
         this.filePath = filePath;
@@ -71,15 +75,13 @@ public class FileOutputNode extends Node implements OutputNode {
 
                 fileOutputStream.write((row.toJSONString()+",\n").getBytes(StandardCharsets.UTF_8));
 
-
             } else if (format == Format.CSV) {
                 if (firstWrite) {
-                    String csvRow = CsvConverter.ListToCsvRow(Arrays.asList(row.getData().keySet().toArray())) + "\n";
-                    fileOutputStream.write(csvRow.getBytes(StandardCharsets.UTF_8));
+                    String headRow = CsvConverter.ListToCsvRow(Arrays.asList(row.getData().keySet().toArray())) + "\n";
+                    fileOutputStream.write(headRow.getBytes(StandardCharsets.UTF_8));
                 }
 
                 if (row.isEnd()) {
-                    fileOutputStream.write(']');
                     log.info("csv文件写入完成：{}", filePath);
                     return;
                 }
@@ -90,6 +92,12 @@ public class FileOutputNode extends Node implements OutputNode {
             } else {
                 fileOutputStream.write((row.toString()+"\n").getBytes(StandardCharsets.UTF_8));
             }
+
+            processed++;
+            if (processed % 10000 == 0) {
+                super.writeInfoLog(String.format("成功写入了%d行数据", processed));
+            }
+
         } catch (IOException e) {
             throw new NodeWritingException(e);
         }

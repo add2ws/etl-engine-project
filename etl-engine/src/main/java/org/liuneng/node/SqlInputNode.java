@@ -78,7 +78,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMetri
                 preparedStatement.close();
                 resultSet.close();
                 connection.close();
-                super.dataflowInstance.addInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration /1000));
+                super.writeInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration /1000));
                 return Row.ofEnd();
             }
         } catch (SQLException | UnsupportedEncodingException e) {
