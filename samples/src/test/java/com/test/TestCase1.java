@@ -50,21 +50,27 @@ public class TestCase1 {
 
     @Test
     void oracleToPGAndFile() {
+        //创建Oracle数据源
         DataSource oracleDataSource = DataSourceUtil.getOracleDataSource();
         SqlInputNode sqlInputNode = new SqlInputNode(oracleDataSource, "select * from etl_base.t_resident_info where rownum<=50000 order by id");
 
+        //创建Postgres数据源
         DataSource postgresDataSource = DataSourceUtil.getPostgresDataSource();
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(postgresDataSource, "public.t_resident_info", 1000);
         upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID","ID")));
 
+        //创建csv文件目标
         FileOutputNode fileOutputNode = new FileOutputNode("E:/output_" + System.currentTimeMillis() + ".csv", FileOutputNode.Format.CSV);
 
+        //创建管道并连接Oracle和Postgres
         Pipe pipe = new Pipe(1000);
         pipe.connect(sqlInputNode,upsertOutputNode);
 
+        //创建管道并连接Oracle和csv文件
         Pipe pipe_2 = new Pipe(1000);
         pipe_2.connect(sqlInputNode,fileOutputNode);
 
+        //创建数据流并启动
         Dataflow dataflow = new Dataflow(sqlInputNode);
         dataflow.syncStart();
 
@@ -106,32 +112,28 @@ public class TestCase1 {
 
     @Test
     void oracleToPG() {
-        //获取数据源
+        //创建Oracle数据源
         DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
-        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
-
         //创建表输入节点
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
 
+        //创建Postgres数据源
+        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
         //创建插入/更新节点
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
+        //设置主键映射
         upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
 
-        //创建管道
+        //创建管道，并设定缓冲区为1000条数据
         Pipe pipe = new Pipe(1000);
         //连接表输入和输出节点
         pipe.connect(sqlInputNode, upsertOutputNode);
 
         //创建数据流实例
         Dataflow dataflow = new Dataflow(sqlInputNode);
-        //启动数据流
+        //启动数据流，并设定5分钟后超时
         dataflow.syncStart(5, TimeUnit.MINUTES);
 
-        try {
-            Thread.sleep(1000 * 60);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Test
