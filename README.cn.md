@@ -1,4 +1,4 @@
-# Etl-engine 
+# Etl-engine
 
 **中文** | [English](README.en.md)
 
@@ -26,7 +26,7 @@
 
 ### 2. 运行稳健可靠 🛡️
 
-数据流传输过程中如果遇到异常不会马上停止，可以配置重试次数，自动尝试重新读取或写入数据。
+数据流传输过程中如果遇到异常不会马上停止，自动尝试重新读取或写入数据。
 
 ### 3. 轻量且易于扩展 🧩
 
@@ -42,37 +42,39 @@
 
 ```mermaid
 flowchart LR
-  sqlInputNode --pipe(10000)--> upsertOutputNode
+  sqlInputNode --pipe--> upsertOutputNode
 ```
 
 ```java
-// 1. 获取数据源
-DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
-DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
 
-// 2. 创建输入节点
+//创建Oracle数据源
+DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
+//创建表输入节点
 SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
 
-// 3. 创建插入/更新节点
-// 批量大小 1000
+//创建Postgres数据源
+DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+//创建插入/更新节点
 UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
-// 设置唯一标识映射，用于判断 Insert 或 Update
+//设置唯一标识(主键)映射，用于判断 Insert 或 Update
 upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
 
-// 4. 创建管道并连接节点
-Pipe pipe = new Pipe(1000); // 管道缓存大小 1000
+//创建管道，并设定缓冲区为1000条数据
+Pipe pipe = new Pipe(1000);
+//连接表输入和输出节点
 pipe.connect(sqlInputNode, upsertOutputNode);
 
-// 5. 启动数据流
+//创建数据流实例
 Dataflow dataflow = new Dataflow(sqlInputNode);
-dataflow.syncStart(5, TimeUnit.MINUTES); // 设置超时时间
+//启动数据流，并设定5分钟后超时
+dataflow.syncStart(5, TimeUnit.MINUTES);
 ```
 
 ### 2. 一个表输入经过字段值转换到一个表输出
 
 ```mermaid
 flowchart LR
-  sqlInputNode --pipe(10000)-->valueConverter --pipe(10000)--> upsertOutputNode
+  sqlInputNode --pipe-->valueConverter --pipe--> upsertOutputNode
 ```
 
 ```java
@@ -83,12 +85,35 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  sqlInputNode --pipe(10000)-->valueConverter --pipe(10000)--> upsertOutputNode
-  sqlInputNode --pipe(10000)--> csvOutputNode
+  sqlInputNode --pipe--> upsertOutputNode
+  sqlInputNode --pipe--> csvOutputNode
 ```
 
 ```java
-//todo
+//创建Oracle数据源
+DataSource oracleDataSource = DataSourceUtil.getOracleDataSource();
+SqlInputNode sqlInputNode = new SqlInputNode(oracleDataSource, "select * from etl_base.t_resident_info where rownum<=50000 order by id");
+
+//创建Postgres目标数据源
+DataSource postgresDataSource = DataSourceUtil.getPostgresDataSource();
+UpsertOutputNode upsertOutputNode = new UpsertOutputNode(postgresDataSource, "public.t_resident_info", 1000);
+upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID","ID")));
+
+//创建csv文件目标
+FileOutputNode fileOutputNode = new FileOutputNode("E:/output_" + System.currentTimeMillis() + ".csv", FileOutputNode.Format.CSV);
+
+//创建管道并连接Oracle和Postgres
+Pipe pipe = new Pipe(1000);
+pipe.connect(sqlInputNode,upsertOutputNode);
+
+//创建管道并连接Oracle和csv文件
+Pipe pipe_2 = new Pipe(1000);
+pipe_2.connect(sqlInputNode,fileOutputNode);
+
+//创建数据流并启动
+Dataflow dataflow = new Dataflow(sqlInputNode);
+dataflow.syncStart();
+
 ```
 
 -----
