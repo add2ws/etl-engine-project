@@ -21,14 +21,17 @@ public class Pipe {
     @Getter
     private long startTime = 0;
 
-    private InputNode from;
+    private InputNode fromNode;
 
-    private OutputNode to;
+    private OutputNode toNode;
 
+    @Getter
     private final int bufferCapacity;
 
     private final BlockingQueue<Row> bufferQueue;
 
+    @Getter
+    @Setter
     private boolean isValid;
 
     private boolean closed = false;
@@ -39,43 +42,31 @@ public class Pipe {
         isValid = true;
     }
 
-    public Optional<InputNode> getFrom() {
-        return Optional.ofNullable(from);
+    public Optional<InputNode> from() {
+        return Optional.ofNullable(fromNode);
     }
 
-    public void setFrom(InputNode from) {
-        this.from = from;
-        from.asNode().addAfterPipe(this);
+    public void from(InputNode from) {
+        this.fromNode = from;
+        from.asNode().addPreviousPipe(this);
     }
 
-    public Optional<OutputNode> getTo() {
-        return Optional.ofNullable(to);
+    public Optional<OutputNode> to() {
+        return Optional.ofNullable(toNode);
     }
 
-    public void setTo(OutputNode to) {
-        this.to = to;
-        to.asNode().setBeforePipe(this);
+    public void to(OutputNode to) {
+        this.toNode = to;
+        to.asNode().setPreviousPipe(this);
     }
 
     public void connect(InputNode inputNode, OutputNode outputNode) {
-        this.setFrom(inputNode);
-        this.setTo(outputNode);
-    }
-
-    public int getBufferCapacity() {
-        return bufferCapacity;
+        this.from(inputNode);
+        this.to(outputNode);
     }
 
     public int getCurrentBufferSize() {
         return bufferQueue.size();
-    }
-
-    public boolean isValid() {
-        return isValid;
-    }
-
-    public void setValid(boolean valid) {
-        isValid = valid;
     }
 
     public void beWritten(Row row) throws InterruptedException {

@@ -2,6 +2,8 @@ package org.liuneng.base;
 
 //import cn.hutool.core.map.CaseInsensitiveLinkedMap;
 import cn.hutool.json.JSONUtil;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.util.Map;
@@ -9,6 +11,7 @@ import java.util.Map;
 
 public class Row {
 
+    @Setter @Getter
     private boolean end;
 
     private final Map<String, Object> data = new LinkedCaseInsensitiveMap<>();
@@ -28,14 +31,13 @@ public class Row {
         return row;
     }
 
-    public Map<String, Object> getData() {
+    public Map<String, Object> getMap() {
         return data;
     }
 
     public Object get(String key) {
         return data.get(key);
     }
-
 
     public void put(String key, Object val) {
         this.data.put(key, val);
@@ -50,11 +52,4 @@ public class Row {
         return JSONUtil.toJsonStr(data);
     }
 
-    public boolean isEnd() {
-        return end;
-    }
-
-    public void setEnd(boolean end) {
-        this.end = end;
-    }
 }

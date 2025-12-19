@@ -5,11 +5,11 @@ import org.liuneng.exception.NodeException;
 import org.liuneng.node.ValueConvertNode;
 
 public class ValueMappingConverterNode extends ValueConvertNode {
+
     @Override
     public Row convert(Row row) {
 
 //        row.getData().get("jyzlb")
-
         return row;
     }
 

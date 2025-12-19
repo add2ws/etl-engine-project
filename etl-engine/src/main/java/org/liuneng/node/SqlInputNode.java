@@ -15,11 +15,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class SqlInputNode extends Node implements InputNode, DataProcessingMetrics {
+public class SqlInputNode extends Node implements InputNode, DataProcessingMonitor {
     final static Logger log = LoggerFactory.getLogger(SqlInputNode.class);
 
     @Getter @Setter

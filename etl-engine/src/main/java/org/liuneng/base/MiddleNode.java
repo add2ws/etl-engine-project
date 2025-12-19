@@ -1,9 +1,5 @@
-package org.liuneng.node;
+package org.liuneng.base;
 
-import org.liuneng.base.OutputNode;
-import org.liuneng.base.InputNode;
-import org.liuneng.base.Node;
-import org.liuneng.base.Row;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodeReadingException;
 import org.liuneng.exception.NodeWritingException;
@@ -14,10 +10,8 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
-public abstract class ValueConvertNode extends Node implements InputNode, OutputNode {
+public abstract class MiddleNode extends Node implements InputNode, OutputNode {
     private final BlockingQueue<Row> list = new SynchronousQueue<>();
-
-
 
     @Override
     public Row read() throws NodeReadingException {
@@ -30,7 +24,7 @@ public abstract class ValueConvertNode extends Node implements InputNode, Output
 
     @Override
     public void write(Row row) throws NodeWritingException {
-        row = convert(row);
+        row = process(row);
         try {
             list.put(row);
         } catch (InterruptedException e) {
@@ -38,21 +32,15 @@ public abstract class ValueConvertNode extends Node implements InputNode, Output
         }
     }
 
-    public abstract Row convert(Row row);
-
-
+    public abstract Row process(Row row);
 
     public List<Tuple2<String, String>> getColumnMapping() {
         return Collections.emptyList();
     }
 
-    public void setColumnMapping(List<Tuple2<String, String>> columnsMapping) {
-
-    }
-
     @Override
     public String[] getInputColumns() throws NodeException {
-        return this.getBeforeNode().orElseThrow(() -> new NodeException("无法获得上个节点的列")).getInputColumns();
+        return this.getPreviousNode().orElseThrow(() -> new NodeException("无法获得上个节点的列")).getInputColumns();
     }
 
     @Override

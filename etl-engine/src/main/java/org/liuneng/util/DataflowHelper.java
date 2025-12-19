@@ -18,6 +18,8 @@ public class DataflowHelper {
 
     private DataflowHelper() {}
 
+
+
     public static void logListener(Dataflow dataflow, Consumer<EtlLog> handler) {
         Runnable runnable = () -> {
             int cursor = 0;
@@ -64,7 +66,6 @@ public class DataflowHelper {
         recurNodes(dataflow.getHead(), nodePipeTuple2 -> consumer.apply(nodePipeTuple2.getPartA(), nodePipeTuple2.getPartB()));
     }
 
-
     private static void recurNodes(Object currentNode, Function<Tuple2<Node, Pipe>, Boolean> handler) {
         if (currentNode instanceof Node) {
             Node node = (Node) currentNode;
@@ -72,9 +73,9 @@ public class DataflowHelper {
             if (!isContinue) {
                 return;
             }
-            if (!node.getAfterPipes().isEmpty()) {
-                for (Pipe afterPipe : node.getAfterPipes()) {
-                    recurNodes(afterPipe, handler);
+            if (!node.getNextPipes().isEmpty()) {
+                for (Pipe nextPipe : node.getNextPipes()) {
+                    recurNodes(nextPipe, handler);
                 }
             }
         } else if (currentNode instanceof Pipe) {
@@ -83,8 +84,8 @@ public class DataflowHelper {
             if (!isContinue) {
                 return;
             }
-            if (pipe.getTo().isPresent()) {
-                recurNodes(pipe.getTo().get(), handler);
+            if (pipe.to().isPresent()) {
+                recurNodes(pipe.to().get(), handler);
             }
         }
     }

@@ -16,7 +16,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 
 public class FileOutputNode extends Node implements OutputNode {
     final static Logger log = LoggerFactory.getLogger(FileOutputNode.class);
@@ -77,7 +76,7 @@ public class FileOutputNode extends Node implements OutputNode {
 
             } else if (format == Format.CSV) {
                 if (firstWrite) {
-                    String headRow = CsvConverter.ListToCsvRow(Arrays.asList(row.getData().keySet().toArray())) + "\n";
+                    String headRow = CsvConverter.ListToCsvRow(Arrays.asList(row.getMap().keySet().toArray())) + "\n";
                     fileOutputStream.write(headRow.getBytes(StandardCharsets.UTF_8));
                 }
 
@@ -86,7 +85,7 @@ public class FileOutputNode extends Node implements OutputNode {
                     return;
                 }
 
-                String csvRow = CsvConverter.ListToCsvRow(row.getData().values()) + "\n";
+                String csvRow = CsvConverter.ListToCsvRow(row.getMap().values()) + "\n";
                 fileOutputStream.write(csvRow.getBytes(StandardCharsets.UTF_8));
 
             } else {

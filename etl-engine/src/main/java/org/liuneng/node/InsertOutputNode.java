@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class InsertOutputNode extends Node implements OutputNode, DataProcessingMetrics {
+public class InsertOutputNode extends Node implements OutputNode, DataProcessingMonitor {
     final static Logger log = LoggerFactory.getLogger(InsertOutputNode.class);
 
     private String[] columns;
@@ -124,7 +124,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
 
     public List<Tuple2<String, String>> autoMapTargetColumns() throws Exception {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
-        InputNode from = this.getBeforePipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).getFrom().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
+        InputNode from = this.getPreviousPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
         String[] sourceColumns = NodeHelper.getUpstreamColumns(from);
 
         this.columnsMapping.clear();

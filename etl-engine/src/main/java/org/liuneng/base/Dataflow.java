@@ -1,6 +1,5 @@
 package org.liuneng.base;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -135,7 +134,7 @@ public class Dataflow {
         this.writeLogOfNode(node, logLevel, message, null);
     }
 
-    private void nodeReading(InputNode inputNode) {
+    private void readingFrom(InputNode inputNode) {
         dataTransferExecutor.execute(() -> {
             String logMsg = String.format("%s start reading...", inputNode.asNode().getName());
             this.writeInfoLog(logMsg);
@@ -177,23 +176,32 @@ public class Dataflow {
                         currentStartTime = System.currentTimeMillis();
                     }
 
-                    CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getAfterPipes().size());//确保每个下游管道都接收到数据
-                    for (Pipe afterPipe : inputNode.asNode().getAfterPipes()) {
-                        if (!afterPipe.isValid()) {
-                            countDownLatch.countDown();
-                            continue;
+                    CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
+
+                    if (inputNode instanceof MiddleNodeSwitch) {
+                        for (int i = 0; i < inputNode.asNode().getNextPipes().size(); i++) {
+
                         }
 
-                        dataTransferExecutor.execute(() -> {
-                            try {
-                                afterPipe.beWritten(row);
-                            } catch (InterruptedException e) {
-                                log.error("Pipe 写入异常!", e);
-                                throw new RuntimeException(e);
-                            } finally {
+                    } else {
+
+                        for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
+                            if (!nextPipe.isValid()) {
                                 countDownLatch.countDown();
+                                continue;
                             }
-                        });
+
+                            dataTransferExecutor.execute(() -> {
+                                try {
+                                    nextPipe.beWritten(row);
+                                } catch (InterruptedException e) {
+                                    log.error("Pipe 写入异常!", e);
+                                    throw new RuntimeException(e);
+                                } finally {
+                                    countDownLatch.countDown();
+                                }
+                            });
+                        }
                     }
                     countDownLatch.await();//确保每个下游管道都接收到数据
 
@@ -210,8 +218,24 @@ public class Dataflow {
         });
     }
 
-    private void nodeWriting(OutputNode outputNode) {
-        Pipe beforePipe = outputNode.asNode().getBeforePipe().orElseThrow(() -> new RuntimeException("数据流配置有误，获取前一个管道为空！"));
+    private void processingOf(MiddleNode_new middleNode) {
+
+        Pipe previousPipe = middleNode.asNode().getPreviousPipe().orElseThrow(() -> new DataflowException("Previous pipe is null!"));
+
+        try {
+            Row row = previousPipe.beRead();
+
+
+
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void writingTo(OutputNode outputNode) {
+        Pipe previousPipe = outputNode.asNode().getPreviousPipe().orElseThrow(() -> new RuntimeException("数据流配置有误，获取前一个管道为空！"));
         allCompetedOutputCount.addAndGet(1);
         dataTransferExecutor.execute(() -> {
             String logMsg = String.format("%s start writing...", outputNode.asNode().getName());
@@ -224,7 +248,7 @@ public class Dataflow {
                 try {
                     Row row = null;
                     if (errorCount == 0) {
-                        row = beforePipe.beRead();
+                        row = previousPipe.beRead();
                     }
                     try {
                         outputNode.write(row);
@@ -249,20 +273,13 @@ public class Dataflow {
 
                     if (++writtenTotal % processingThresholdLog == 0) {
                         double elapsed = System.currentTimeMillis() - currentNodeStartTime;
-//                        long currentSpeed;
-//                        long avgSpeed;
-//                        if (elapsed == 0) {
-//                            currentSpeed = -1;
-//                        }
-
-
                         elapsed = (elapsed == 0 ? 0.001 : elapsed);
                         logMsg = String.format("输出总量=%d, 当前速度=%.0f条/秒，平均速度%.0f条/秒，当前管道(%d/%d)"
                                 , writtenTotal
                                 , processingThresholdLog / elapsed * 1000
                                 , writtenTotal / ((System.currentTimeMillis() - startTime) / 1000.0)
-                                , beforePipe.getCurrentBufferSize()
-                                , beforePipe.getBufferCapacity()
+                                , previousPipe.getCurrentBufferSize()
+                                , previousPipe.getBufferCapacity()
                         );
                         this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
                         currentNodeStartTime = System.currentTimeMillis();
@@ -297,21 +314,21 @@ public class Dataflow {
         this.writeLogOfNode(currentNode, LogLevel.INFO, "初始化完成。");
 
         if (currentNode instanceof InputNode) {
-            nodeReading((InputNode) currentNode);
+            readingFrom((InputNode) currentNode);
         }
 
         if (currentNode instanceof OutputNode) {
-            nodeWriting((OutputNode) currentNode);
+            writingTo((OutputNode) currentNode);
         }
 
-        for (Pipe afterPipe : currentNode.getAfterPipes()) {
-            if (afterPipe.isValid() && afterPipe.getTo().isPresent()) {
-                if (StrUtil.isBlank(afterPipe.getId())) {
+        for (Pipe nextPipe : currentNode.getNextPipes()) {
+            if (nextPipe.isValid() && nextPipe.to().isPresent()) {
+                if (StrUtil.isBlank(nextPipe.getId())) {
                     String pipeID = String.format("Pipeline-%d_%s", ++increasedId, timeStr);
-                    afterPipe.setId(pipeID);
+                    nextPipe.setId(pipeID);
                 }
-                afterPipe.initialize(this);
-                this.recursiveStartNodes(afterPipe.getTo().get().asNode());
+                nextPipe.initialize(this);
+                this.recursiveStartNodes(nextPipe.to().get().asNode());
             }
         }
     }

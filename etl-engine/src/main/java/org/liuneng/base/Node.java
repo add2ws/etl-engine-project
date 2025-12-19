@@ -19,47 +19,49 @@ public abstract class Node {
 
     protected Dataflow dataflowInstance;
 
-    private Pipe beforePipe;
+    private Pipe previousPipe;
+
+    @Getter
+    private final List<Pipe> nextPipes = new ArrayList<>();
+
 
     public Node() {
         this.id = "Node-"+IdUtil.fastSimpleUUID();
         this.name = this.getClass().getSimpleName();
     }
 
-    @Getter
-    private final List<Pipe> afterPipes = new ArrayList<>();
 
-    public Optional<Pipe> getBeforePipe() {
-        return Optional.ofNullable(beforePipe);
+    public Optional<Pipe> getPreviousPipe() {
+        return Optional.ofNullable(previousPipe);
     }
 
-    public Optional<InputNode> getBeforeNode() {
-        if (this.getBeforePipe().isPresent()) {
-            return this.getBeforePipe().get().getFrom();
+    public Optional<InputNode> getPreviousNode() {
+        if (this.getPreviousPipe().isPresent()) {
+            return this.getPreviousPipe().get().from();
         } else {
             return Optional.empty();
         }
     }
 
-    public List<OutputNode> getAfterNodes() {
-        if (this.getAfterPipes().isEmpty()) {
+    public List<OutputNode> getNextNodes() {
+        if (this.getNextPipes().isEmpty()) {
             return Collections.emptyList();
         } else {
-            return this.getAfterPipes().stream().map(pipe -> pipe.getTo().orElse(null)).collect(Collectors.toList());
+            return this.getNextPipes().stream().map(pipe -> pipe.to().orElse(null)).collect(Collectors.toList());
         }
     }
 
-    protected void setBeforePipe(Pipe beforePipe) {
-        this.beforePipe = beforePipe;
+    protected void setPreviousPipe(Pipe previousPipe) {
+        this.previousPipe = previousPipe;
     }
 
-    protected void setAfterPipes(List<Pipe> afterPipes) {
-        this.afterPipes.clear();
-        this.afterPipes.addAll(afterPipes);
+    protected void setNextPipes(List<Pipe> nextPipes) {
+        this.nextPipes.clear();
+        this.nextPipes.addAll(nextPipes);
     }
 
-    protected void addAfterPipe(Pipe pipe) {
-        afterPipes.add(pipe);
+    protected void addPreviousPipe(Pipe pipe) {
+        nextPipes.add(pipe);
     }
 
     public String getId() {

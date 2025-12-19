@@ -1,6 +1,6 @@
 package org.liuneng.base;
 
-public interface DataProcessingMetrics {
+public interface DataProcessingMonitor {
 
     String getId();
 
