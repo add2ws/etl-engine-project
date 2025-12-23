@@ -177,31 +177,22 @@ public class Dataflow {
                     }
 
                     CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
-
-                    if (inputNode instanceof MiddleNodeSwitch) {
-                        for (int i = 0; i < inputNode.asNode().getNextPipes().size(); i++) {
-
+                    for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
+                        if (!nextPipe.isValid()) {
+                            countDownLatch.countDown();
+                            continue;
                         }
 
-                    } else {
-
-                        for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
-                            if (!nextPipe.isValid()) {
+                        dataTransferExecutor.execute(() -> {
+                            try {
+                                nextPipe.beWritten(row);
+                            } catch (InterruptedException e) {
+                                log.error("Pipe 写入异常!", e);
+                                throw new RuntimeException(e);
+                            } finally {
                                 countDownLatch.countDown();
-                                continue;
                             }
-
-                            dataTransferExecutor.execute(() -> {
-                                try {
-                                    nextPipe.beWritten(row);
-                                } catch (InterruptedException e) {
-                                    log.error("Pipe 写入异常!", e);
-                                    throw new RuntimeException(e);
-                                } finally {
-                                    countDownLatch.countDown();
-                                }
-                            });
-                        }
+                        });
                     }
                     countDownLatch.await();//确保每个下游管道都接收到数据
 
@@ -216,22 +207,6 @@ public class Dataflow {
                 }
             }
         });
-    }
-
-    private void processingOf(MiddleNode_new middleNode) {
-
-        Pipe previousPipe = middleNode.asNode().getPreviousPipe().orElseThrow(() -> new DataflowException("Previous pipe is null!"));
-
-        try {
-            Row row = previousPipe.beRead();
-
-
-
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     private void writingTo(OutputNode outputNode) {
