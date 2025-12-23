@@ -51,8 +51,6 @@ public class Dataflow {
 
     private final ExecutorService dataTransferExecutor;
 
-//    protected final Object blockLocker  = new Object();;
-
     @Getter
     private long startTime;
 
@@ -177,31 +175,22 @@ public class Dataflow {
                     }
 
                     CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
-
-                    if (inputNode instanceof MiddleNodeSwitch) {
-                        for (int i = 0; i < inputNode.asNode().getNextPipes().size(); i++) {
-
+                    for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
+                        if (!nextPipe.isValid()) {
+                            countDownLatch.countDown();
+                            continue;
                         }
 
-                    } else {
-
-                        for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
-                            if (!nextPipe.isValid()) {
+                        dataTransferExecutor.execute(() -> {
+                            try {
+                                nextPipe.beWritten(row);
+                            } catch (InterruptedException e) {
+                                log.error("Pipe 写入异常!", e);
+                                throw new RuntimeException(e);
+                            } finally {
                                 countDownLatch.countDown();
-                                continue;
                             }
-
-                            dataTransferExecutor.execute(() -> {
-                                try {
-                                    nextPipe.beWritten(row);
-                                } catch (InterruptedException e) {
-                                    log.error("Pipe 写入异常!", e);
-                                    throw new RuntimeException(e);
-                                } finally {
-                                    countDownLatch.countDown();
-                                }
-                            });
-                        }
+                        });
                     }
                     countDownLatch.await();//确保每个下游管道都接收到数据
 
@@ -224,8 +213,41 @@ public class Dataflow {
 
         try {
             Row row = previousPipe.beRead();
+            Row processedRow = middleNode.process(row);
+            if (middleNode.getType() == MiddleNode_new.Type.COPY) {
 
+                CountDownLatch countDownLatch = new CountDownLatch(middleNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
+                for (Pipe nextPipe : middleNode.asNode().getNextPipes()) {
+                    if (!nextPipe.isValid()) {
+                        countDownLatch.countDown();
+                        continue;
+                    }
 
+                    dataTransferExecutor.execute(() -> {
+                        try {
+                            nextPipe.beWritten(processedRow);
+                        } catch (InterruptedException e) {
+                            log.error("Pipe 写入异常!", e);
+                            throw new RuntimeException(e);
+                        } finally {
+                            countDownLatch.countDown();
+                        }
+                    });
+                }
+                countDownLatch.await();//确保每个下游管道都接收到数据
+            } else {
+                for (int i = 0; i < middleNode.asNode().getNextPipes().size(); i++) {
+                    Pipe nextPipe =  middleNode.asNode().getNextPipes().get(i);
+                    if (!nextPipe.isValid()) {
+                        continue;
+                    }
+
+                    if (processedRow.getPipeIndex() == i) {
+                        nextPipe.beWritten(processedRow);
+                    }
+                }
+
+            }
 
 
         } catch (InterruptedException e) {

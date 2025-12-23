@@ -14,6 +14,9 @@ public class Row {
     @Setter @Getter
     private boolean end;
 
+    @Setter @Getter
+    private int pipeIndex;
+
     private final Map<String, Object> data = new LinkedCaseInsensitiveMap<>();
 
     private Row() {}
