@@ -1,4 +1,4 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
 import lombok.Getter;
 import lombok.Setter;

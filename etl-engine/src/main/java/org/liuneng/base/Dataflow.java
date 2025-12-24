@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.*;
-import org.liuneng.util.DataflowHelper;
 import org.liuneng.util.StrUtil;
 
 import java.time.LocalDateTime;
@@ -421,7 +420,7 @@ public class Dataflow {
         }
 
         this.status = Status.STOPPING;
-        DataflowHelper.forEachNodesOrPipes(this, (node, pipe) -> {
+        DataflowHelper.of(this).forEachNodesOrPipes((node, pipe) -> {
             this.dataTransferExecutor.execute(() -> {
                 if (node != null) {
                     node.onDataflowStop();

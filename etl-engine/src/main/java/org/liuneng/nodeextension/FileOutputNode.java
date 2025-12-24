@@ -1,4 +1,4 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Node;

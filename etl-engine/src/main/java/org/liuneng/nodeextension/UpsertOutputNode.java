@@ -1,4 +1,4 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -157,7 +157,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         insertingRate = (long) (inserted / elapsedSeconds);
         updatingRate = (long) (updated / elapsedSeconds);
         processingRate = (long) (batchData.size() / elapsedSeconds);
-        log.info("提交成功！，总量(新增/更新)={}({}/{}) 速度={}条/秒", batchData.size(), inserted, updated, this.processingRate);
+        log.info("提交成功！，总量(插入/更新)={}({}/{}) 速度={}条/秒", batchData.size(), inserted, updated, this.processingRate);
     }
 
 //    private PreparedStatement findMatchRowsPreparedstatement = null;
@@ -347,7 +347,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
         long time = System.currentTimeMillis();
         InputNode from = this.getPreviousPipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).from().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
-        String[] sourceColumns = NodeHelper.getUpstreamColumns(from);
+        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns(from);
 
         this.columnsMapping.clear();
         for (String targetColumn : this.getOutputColumns()) {

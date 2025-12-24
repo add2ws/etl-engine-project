@@ -1,10 +1,7 @@
-package org.liuneng.util;
+package org.liuneng.base;
 
 import lombok.extern.slf4j.Slf4j;
-import org.liuneng.base.Dataflow;
-import org.liuneng.base.EtlLog;
-import org.liuneng.base.Node;
-import org.liuneng.base.Pipe;
+import org.liuneng.util.Tuple2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,21 +13,28 @@ import java.util.function.Function;
 @Slf4j
 public class DataflowHelper {
 
-    private DataflowHelper() {}
+    private final Dataflow DATAFLOW;
 
+    private DataflowHelper(Dataflow dataflow) {
+        this.DATAFLOW = dataflow;
+    }
 
+    public static DataflowHelper of(Dataflow dataflow) {
+        return new DataflowHelper(dataflow);
+    }
 
-    public static void logListener(Dataflow dataflow, Consumer<EtlLog> handler) {
+    public void logListener(Consumer<EtlLog> handler) {
+
         Runnable runnable = () -> {
             int cursor = 0;
-            while (!dataflow.isStopped() || cursor < dataflow.getLogList().size()) {
+            while (!DATAFLOW.isStopped() || cursor < DATAFLOW.getLogList().size()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                if (cursor < dataflow.getLogList().size()) {
-                    EtlLog etlLog = dataflow.getLogList().get(cursor);
+                if (cursor < DATAFLOW.getLogList().size()) {
+                    EtlLog etlLog = DATAFLOW.getLogList().get(cursor);
                     if (etlLog == null) {
                         log.error("日志为空");
                     }
@@ -40,18 +44,19 @@ public class DataflowHelper {
             }
 
         };
-        new Thread(runnable, "LogListener-" + dataflow.getId()).start();
+        Thread thread = new Thread(runnable, "LogListener-" + DATAFLOW.getId());
+        thread.start();
     }
 
-    public static List<Tuple2<Node, Pipe>> getAllNodesAndPipes(Dataflow dataflow) {
+    public List<Tuple2<Node, Pipe>> getAllNodesAndPipes() {
         List<Tuple2<Node, Pipe>> results = new ArrayList<>();
-        recurNodes(dataflow.getHead(), results::add);
+        recurNodes(DATAFLOW.getHead(), results::add);
         return results;
     }
 
-    public static Node findNodeById(Dataflow dataflow, String id) {
+    public Node findNodeById(String id) {
         AtomicReference<Node> re = new AtomicReference<>();
-        forEachNodesOrPipes(dataflow, (node, pipe) -> {
+        this.forEachNodesOrPipes((node, pipe) -> {
             if (node != null && id.equals(node.getId())) {
                 re.set(node);
                 return false;
@@ -62,11 +67,11 @@ public class DataflowHelper {
         return re.get();
     }
 
-    public static void forEachNodesOrPipes(Dataflow dataflow, BiFunction<Node, Pipe, Boolean> consumer) {
-        recurNodes(dataflow.getHead(), nodePipeTuple2 -> consumer.apply(nodePipeTuple2.getPartA(), nodePipeTuple2.getPartB()));
+    public void forEachNodesOrPipes(BiFunction<Node, Pipe, Boolean> consumer) {
+        recurNodes(DATAFLOW.getHead(), nodePipeTuple2 -> consumer.apply(nodePipeTuple2.getPartA(), nodePipeTuple2.getPartB()));
     }
 
-    private static void recurNodes(Object currentNode, Function<Tuple2<Node, Pipe>, Boolean> handler) {
+    private void recurNodes(Object currentNode, Function<Tuple2<Node, Pipe>, Boolean> handler) {
         if (currentNode instanceof Node) {
             Node node = (Node) currentNode;
             boolean isContinue = handler.apply(new Tuple2<>(node, null));

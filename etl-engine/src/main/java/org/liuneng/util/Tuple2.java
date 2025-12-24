@@ -1,5 +1,8 @@
 package org.liuneng.util;
 
+import lombok.Data;
+
+@Data
 public class Tuple2<T1, T2> {
 
     private T1 partA;
@@ -7,22 +10,6 @@ public class Tuple2<T1, T2> {
 
     public Tuple2(T1 partA, T2 partB) {
         this.partA = partA;
-        this.partB = partB;
-    }
-
-    public T1 getPartA() {
-        return partA;
-    }
-
-    public T2 getPartB() {
-        return partB;
-    }
-
-    public void setPartA(T1 partA) {
-        this.partA = partA;
-    }
-
-    public void setPartB(T2 partB) {
         this.partB = partB;
     }
 

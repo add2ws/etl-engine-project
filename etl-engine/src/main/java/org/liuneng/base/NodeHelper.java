@@ -1,7 +1,6 @@
-package org.liuneng.util;
+package org.liuneng.base;
 
 import lombok.extern.slf4j.Slf4j;
-import org.liuneng.base.InputNode;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -10,9 +9,17 @@ import java.util.Set;
 @Slf4j
 public class NodeHelper {
 
-    
+    private final Node NODE;
 
-    public static String[] getUpstreamColumns(InputNode inputNode) {
+    private NodeHelper(Node node) {
+        this.NODE = node;
+    }
+
+    public static NodeHelper of(Node node) {
+        return new NodeHelper(node);
+    }
+
+    public String[] getUpstreamColumns(InputNode inputNode) {
         Set<String> columns = new LinkedHashSet<>();
         InputNode current = inputNode;
         do {

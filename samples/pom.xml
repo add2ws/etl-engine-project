@@ -22,7 +22,7 @@
         <dependency>
             <groupId>io.github.add2ws</groupId>
             <artifactId>etl-engine</artifactId>
-            <version>2.2.0-BETA</version>
+            <version>2.3.0</version>
         </dependency>
 
     </dependencies>
@@ -79,7 +79,7 @@
                     <archive>
                         <manifest>
                             <!-- 必须：指定主类（包名+类名） -->
-                            <mainClass>io.github.add2ws.OracleToPG</mainClass>
+                            <mainClass>io.github.add2ws.runner.OracleToPG</mainClass>
                             <!-- 可选：是否添加类路径（依赖外置时需开启） -->
                             <addClasspath>true</addClasspath>
                             <!-- 可选：依赖包的存放路径（外置依赖时指定） -->
