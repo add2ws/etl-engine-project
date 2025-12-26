@@ -12,10 +12,13 @@ import java.util.Map;
 public class Row {
 
     @Setter @Getter
-    private boolean end;
+    private boolean end = false;
 
     @Setter @Getter
-    private int pipeIndex;
+    private boolean empty = false;
+
+    @Setter @Getter
+    private int pipeIndex = 0;
 
     private final Map<String, Object> data = new LinkedCaseInsensitiveMap<>();
 
@@ -27,10 +30,22 @@ public class Row {
         return row;
     }
 
-    public static Row fromMap(Map<String, Object> d) {
+    public static Row ofEmpty() {
+        Row row = new Row();
+        row.setEmpty(true);
+        return row;
+    }
+
+    public static Row ofMap(Map<String, Object> d) {
         Row row = new Row();
         row.data.putAll(d);
-        row.end = false;
+        return row;
+    }
+
+    public static Row ofMap(Map<String, Object> d, int pipeIndex) {
+        Row row = new Row();
+        row.data.putAll(d);
+        row.setPipeIndex(pipeIndex);
         return row;
     }
 

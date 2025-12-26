@@ -19,7 +19,8 @@ public class OracleToPG {
         DataSource dataSourceOracle = DataSourceUtil.getOracleDataSourcePool();
         DataSource dataSourcePG = DataSourceUtil.getPostgresDataSourcePool();
 
-        String sql = "select * from (select * from ETL_BASE.T_RESIDENT_INFO where 1=1 order by ID) T where ROWNUM<=200000";
+        String sql = "select * from ETL_BASE.T_RESIDENT_INFO where 1=1 AND ROWNUM < 200000";
+//        String sql = "select * from (select * from ETL_BASE.T_RESIDENT_INFO where 1=1 order by ID) T where ROWNUM < 200000";
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, sql);
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
 //        upsertOutputNode.setInsertOnly(true);
@@ -28,7 +29,7 @@ public class OracleToPG {
         pipe.connect(sqlInputNode, upsertOutputNode);
 
         Dataflow dataflow = new Dataflow(sqlInputNode);
-        dataflow.setProcessingThresholdLog(5000);
+        dataflow.setProcessingThresholdLog(10000);
 //        DataflowHelper.logListener(dataflow, etlLog -> {
 //            System.out.println(etlLog.getMessage());
 //        });

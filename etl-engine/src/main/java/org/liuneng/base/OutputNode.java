@@ -13,6 +13,7 @@ public interface OutputNode {
 
     void write(Row row) throws NodeWritingException;
 
+
     String[] getOutputColumns() throws NodeException;
 
     default Node asNode() {

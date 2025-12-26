@@ -19,7 +19,7 @@ public abstract class Node {
 
     protected Dataflow dataflowInstance;
 
-    private Pipe previousPipe;
+    private Pipe prevPipe;
 
     @Getter
     private final List<Pipe> nextPipes = new ArrayList<>();
@@ -31,13 +31,13 @@ public abstract class Node {
     }
 
 
-    public Optional<Pipe> getPreviousPipe() {
-        return Optional.ofNullable(previousPipe);
+    public Optional<Pipe> getPrevPipe() {
+        return Optional.ofNullable(prevPipe);
     }
 
-    public Optional<InputNode> getPreviousNode() {
-        if (this.getPreviousPipe().isPresent()) {
-            return this.getPreviousPipe().get().from();
+    public Optional<InputNode> getPrevNode() {
+        if (this.getPrevPipe().isPresent()) {
+            return this.getPrevPipe().get().from();
         } else {
             return Optional.empty();
         }
@@ -51,8 +51,8 @@ public abstract class Node {
         }
     }
 
-    protected void setPreviousPipe(Pipe previousPipe) {
-        this.previousPipe = previousPipe;
+    protected void setPrevPipe(Pipe prevPipe) {
+        this.prevPipe = prevPipe;
     }
 
     protected void setNextPipes(List<Pipe> nextPipes) {
@@ -60,7 +60,7 @@ public abstract class Node {
         this.nextPipes.addAll(nextPipes);
     }
 
-    protected void addPreviousPipe(Pipe pipe) {
+    protected void addPrevPipe(Pipe pipe) {
         nextPipes.add(pipe);
     }
 

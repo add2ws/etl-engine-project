@@ -1,7 +1,9 @@
 package org.liuneng.nodeextension;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.liuneng.base.*;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
@@ -18,22 +20,28 @@ import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 public class SqlInputNode extends Node implements InputNode, DataProcessingMonitor {
-    final static Logger log = LoggerFactory.getLogger(SqlInputNode.class);
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private String charset;
 
     private String[] columns;
-    @Getter @Setter
+    @Getter
+    @Setter
     private DataSource dataSource;
-    @Getter @Setter
+    @Getter
+    @Setter
     private String sql;
-    @Getter @Setter
+    @Getter
+    @Setter
     private int fetchSize;
-    @Getter @Setter
+    @Getter
+    @Setter
     private long processed;
-    @Getter @Setter
+    @Getter
+    @Setter
     private long processingRate;
 
     @Getter
@@ -46,6 +54,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
     private ResultSet resultSet;
 
 
+    @NonNull
     @Override
     public Row read() throws NodeReadingException {
         if (startTime == 0) {
@@ -68,16 +77,16 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
                     }
                     row.put(column, value);
                 }
-                processed ++;
+                processed++;
                 if (duration > 0) {
-                    processingRate = (long) (processed / (duration/1000.0));
+                    processingRate = (long) (processed / (duration / 1000.0));
                 }
-                return Row.fromMap(row);
+                return Row.ofMap(row);
             } else {
                 preparedStatement.close();
                 resultSet.close();
                 connection.close();
-                super.writeInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration /1000));
+                super.writeInfoLog(String.format("%s completed, processed=%d, time consuming=%ds.", this.getName(), processed, duration / 1000));
                 return Row.ofEnd();
             }
         } catch (SQLException | UnsupportedEncodingException e) {
@@ -103,7 +112,8 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
         return columns;
     }
 
-    public SqlInputNode() {}
+    public SqlInputNode() {
+    }
 
     public SqlInputNode(DataSource dataSource, String sql) {
         this.dataSource = dataSource;

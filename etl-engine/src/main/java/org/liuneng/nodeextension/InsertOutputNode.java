@@ -124,7 +124,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
 
     public List<Tuple2<String, String>> autoMapTargetColumns() throws Exception {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
-        InputNode from = this.getPreviousPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
+        InputNode from = this.getPrevPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
         String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns(from);
 
         this.columnsMapping.clear();

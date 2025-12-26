@@ -56,7 +56,7 @@ public class DataflowHelper {
 
     public Node findNodeById(String id) {
         AtomicReference<Node> re = new AtomicReference<>();
-        this.forEachNodesOrPipes((node, pipe) -> {
+        this.forEachNodesAndPipes((node, pipe) -> {
             if (node != null && id.equals(node.getId())) {
                 re.set(node);
                 return false;
@@ -67,7 +67,7 @@ public class DataflowHelper {
         return re.get();
     }
 
-    public void forEachNodesOrPipes(BiFunction<Node, Pipe, Boolean> consumer) {
+    public void forEachNodesAndPipes(BiFunction<Node, Pipe, Boolean> consumer) {
         recurNodes(DATAFLOW.getHead(), nodePipeTuple2 -> consumer.apply(nodePipeTuple2.getPartA(), nodePipeTuple2.getPartB()));
     }
 

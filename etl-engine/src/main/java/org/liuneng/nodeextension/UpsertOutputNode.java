@@ -346,7 +346,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     public List<Tuple3<String, String, UpsertTag>> autoMapTargetColumns() {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
         long time = System.currentTimeMillis();
-        InputNode from = this.getPreviousPipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).from().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
+        InputNode from = this.getPrevPipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).from().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
         String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns(from);
 
         this.columnsMapping.clear();

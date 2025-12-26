@@ -1,7 +1,9 @@
 package org.liuneng.base;
 
+import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,8 +11,8 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+@Slf4j
 public class Pipe {
-    final static Logger log = LoggerFactory.getLogger(Dataflow.class);
 
     private Dataflow dataflowInstance;
 
@@ -37,6 +39,7 @@ public class Pipe {
     private boolean closed = false;
 
     public Pipe(int bufferCapacity) {
+        this.id = "Pipe-" + IdUtil.fastSimpleUUID();
         this.bufferCapacity = bufferCapacity;
         bufferQueue = new ArrayBlockingQueue<>(this.bufferCapacity);
         isValid = true;
@@ -48,7 +51,7 @@ public class Pipe {
 
     public void from(InputNode from) {
         this.fromNode = from;
-        from.asNode().addPreviousPipe(this);
+        from.asNode().addPrevPipe(this);
     }
 
     public Optional<OutputNode> to() {
@@ -57,7 +60,7 @@ public class Pipe {
 
     public void to(OutputNode to) {
         this.toNode = to;
-        to.asNode().setPreviousPipe(this);
+        to.asNode().setPrevPipe(this);
     }
 
     public void connect(InputNode inputNode, OutputNode outputNode) {

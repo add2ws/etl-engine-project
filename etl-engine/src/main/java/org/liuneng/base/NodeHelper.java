@@ -24,7 +24,7 @@ public class NodeHelper {
         InputNode current = inputNode;
         do {
             columns.addAll(Arrays.asList(current.getInputColumns()));
-            current = current.asNode().getPreviousNode().orElse(null);
+            current = current.asNode().getPrevNode().orElse(null);
         } while (current != null);
 
         return columns.toArray(new String[0]);
