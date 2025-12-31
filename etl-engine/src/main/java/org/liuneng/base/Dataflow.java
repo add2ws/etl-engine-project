@@ -5,10 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.*;
-import org.liuneng.util.StrUtil;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -44,10 +41,6 @@ public class Dataflow {
 
     private final AtomicInteger allCompetedOutputCount = new AtomicInteger(0);
 
-    private final LocalDateTime createTime;
-
-    private int increasedId = 0;
-
     private final ExecutorService dataTransferThreadPool;
 
     @Getter
@@ -65,12 +58,11 @@ public class Dataflow {
 
     @Getter
     @Setter
-    private int retryTimeoutMillis = 3000;
+    private int retryTimeoutSeconds = 3;
 
     public Dataflow(Node headNode) {
         this.id = "Dataflow-" + IdUtil.fastSimpleUUID();
         this.head = headNode;
-        this.createTime = LocalDateTime.now();
         this.status = Status.IDLE;
         this.dataTransferThreadPool = Executors.newCachedThreadPool(r -> new Thread(r, "DataTransferThread-" + this.id));
     }
@@ -104,15 +96,15 @@ public class Dataflow {
 
         if (logLevel == LogLevel.INFO) {
             if (node == null) {
-                log.info("数据流[ID={}]日志消息：{}", this.getId(), message);
+                log.info("Log message from Dataflow[ID={}]:{}", this.getId(), message);
             } else {
-                log.info("节点：{} 的日志消息：{}", node.getName(), message);
+                log.info("Log message from Node[Name={}]: {}", node.getName(), message);
             }
         } else if (logLevel == LogLevel.ERROR) {
             if (node == null) {
-                log.error("数据流[ID={}]异常消息：{}", this.getId(), message, e);
+                log.error("Error message from Dataflow[ID={}]:{}", this.getId(), message, e);
             } else {
-                log.error("节点：{} 的异常消息：{}", node.getName(), message, e);
+                log.error("Error message from Node[Name={}]: {}", node.getName(), message, e);
             }
         }
 
@@ -140,9 +132,9 @@ public class Dataflow {
                 Row row = inputNode.read();
                 return row;
             } catch (NodeReadingException e) {
-                String msg = String.format("InputNode reading exception！%s will retry after 5 seconds...", e.getMessage());
+                String msg = String.format("InputNode reading exception！%s will retry after %d seconds...", e.getMessage(), retryTimeoutSeconds);
                 this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, msg, e);
-                Thread.sleep(retryTimeoutMillis);
+                Thread.sleep(retryTimeoutSeconds * 1000L);
             }
         }
         this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, "Exceed max retry count " + _maxRetryCount);
@@ -215,7 +207,7 @@ public class Dataflow {
             } catch (NodeException e) {
                 String msg = String.format("MiddleNode processing failed %d times, Will retry after 5 seconds... errMsg: %s", i+1, e.getMessage());
                 this.writeLogOfNode(node.asNode(), LogLevel.ERROR, msg, e);
-                Thread.sleep(retryTimeoutMillis);
+                Thread.sleep(retryTimeoutSeconds * 1000L);
             }
         }
         this.writeLogOfNode(node.asNode(), LogLevel.ERROR, "Exceed max retry count " + _maxRetryCount);
@@ -288,7 +280,7 @@ public class Dataflow {
                 return true;
             } catch (NodeWritingException e) {
                 this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, String.format("写入异常！%s 3秒后重试。。。", e.getMessage()));
-                Thread.sleep(retryTimeoutMillis);
+                Thread.sleep(retryTimeoutSeconds * 1000L);
             }
         }
         this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, String.format("已重试%d次仍异常，节点强制结束。", _maxRetryCount));

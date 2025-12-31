@@ -7,12 +7,6 @@ import org.liuneng.exception.NodeReadingException;
 
 public interface InputNode {
 
-    long getProcessed();
-
-    long getProcessingRate();
-
-    long getStartTime();
-
     @NonNull
     Row read() throws NodeReadingException;
 
