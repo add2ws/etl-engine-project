@@ -26,7 +26,7 @@ public class OracleToPGAndFile {
 
         ConditionNode conditionNode = new ConditionNode();
 
-        FileOutputNode fileOutputNode = new FileOutputNode("E:/t_resident_info_female", FileOutputNode.Format.CSV);
+        FileOutputNode fileOutputNode = new FileOutputNode(String.format("E:/t_resident_info_female.csv"), FileOutputNode.Format.CSV);
 
 //        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
         Pipe pipe = new Pipe(10000);

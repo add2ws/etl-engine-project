@@ -1,6 +1,7 @@
 package org.liuneng.nodeextension;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.liuneng.base.*;
 import org.liuneng.exception.NodeException;
@@ -55,7 +56,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     private long startTime;
 
     @Override
-    public void write(Row row) throws NodeWritingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
         if (!isDeleted && StrUtil.isNotBlank(deleteSql)) {
             jdbcTemplate.update(deleteSql);
             isDeleted = true;

@@ -1,6 +1,7 @@
 package org.liuneng.nodeextension;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.liuneng.base.*;
 import org.liuneng.exception.NodeException;
@@ -85,7 +86,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     private long startTime;
 
     @Override
-    public void write(Row row) throws NodeWritingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
         if (startTime == 0) {
             startTime = System.currentTimeMillis();
         }

@@ -171,25 +171,39 @@ public class Dataflow {
                     this.writeLogOfNode(inputNode.asNode(), LogLevel.INFO, msg);
                 }
 
-                CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
-                for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
-                    if (!nextPipe.isValid()) {
-                        countDownLatch.countDown();
-                        continue;
-                    }
-
-                    dataTransferThreadPool.execute(() -> {
-                        try {
-                            nextPipe.beWritten(row);
-                        } catch (InterruptedException e) {
-                            log.error("Pipe 写入异常!", e);
-                            throw new RuntimeException(e);
-                        } finally {
-                            countDownLatch.countDown();
+                if (inputNode instanceof MiddleNode && ((MiddleNode) inputNode).getType() == MiddleNode.Type.SWITCH) {
+                    for (int i = 0; i < inputNode.asNode().getNextPipes().size(); i++) {
+                        Pipe nextPipe = inputNode.asNode().getNextPipes().get(i);
+                        if (!nextPipe.isValid()) {
+                            continue;
                         }
-                    });
+
+                        if (row.getPipeIndex() == i) {
+                            nextPipe.beWritten(row);
+                        }
+                    }
+                } else {
+                    CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
+                    for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
+                        if (!nextPipe.isValid()) {
+                            countDownLatch.countDown();
+                            continue;
+                        }
+
+                        dataTransferThreadPool.execute(() -> {
+                            try {
+                                nextPipe.beWritten(row);
+                            } catch (InterruptedException e) {
+                                log.error("Pipe 写入异常!", e);
+                                throw new RuntimeException(e);
+                            } finally {
+                                countDownLatch.countDown();
+                            }
+                        });
+                    }
+                    countDownLatch.await();//确保每个下游管道都接收到数据
                 }
-                countDownLatch.await();//确保每个下游管道都接收到数据
+
                 if (row.isEnd()) {// reading completed , break the foreach
                     break;
                 }
@@ -199,7 +213,7 @@ public class Dataflow {
         }
     }
 
-    private Row tryProcess(Row row, MiddleNode node, int _maxRetryCount) throws InterruptedException {
+    /*private Row tryProcess(Row row, MiddleNode node, int _maxRetryCount) throws InterruptedException {
         for (int i = 0; i < _maxRetryCount; i++) {
             try {
                 Row processed = node.process(row);
@@ -212,9 +226,9 @@ public class Dataflow {
         }
         this.writeLogOfNode(node.asNode(), LogLevel.ERROR, "Exceed max retry count " + _maxRetryCount);
         return null;
-    }
+    }*/
 
-    private void processingOf(MiddleNode middleNode) {
+    /*private void processingOf(MiddleNode middleNode) {
         Pipe prevPipe = middleNode.asNode().getPrevPipe().orElseThrow(() -> new DataflowException("Previous pipe is null!"));
 
         try {
@@ -271,7 +285,7 @@ public class Dataflow {
             this.writeErrorLog("MiddleNode processing thread was interrupted.", e);
         }
 
-    }
+    }*/
 
     private boolean tryWrite(Row row, OutputNode outputNode, int _maxRetryCount) throws InterruptedException {
         for (int retriedCount = 0; retriedCount < _maxRetryCount; retriedCount++) {
@@ -348,9 +362,9 @@ public class Dataflow {
                 readFromPipeAndWriting((OutputNode) currentNode);
             }
 
-            if (currentNode instanceof MiddleNode) {
-                processingOf((MiddleNode) currentNode);
-            }
+//            if (currentNode instanceof MiddleNode) {
+//                processingOf((MiddleNode) currentNode);
+//            }
         });
 
 

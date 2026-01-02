@@ -5,50 +5,67 @@ import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodeReadingException;
 import org.liuneng.exception.NodeWritingException;
 
-public interface MiddleNode extends InputNode, OutputNode {
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 
-    enum Type {
+public abstract class MiddleNode extends Node implements InputNode, OutputNode {
+
+    public enum Type {
         COPY, SWITCH
     }
 
-    enum FailedPolicy {
+    public enum FailedPolicy {
         TERMINATE_DATAFLOW,
         END_DOWNSTREAM
     }
 
-    @NonNull
-    Row process(@NonNull Row row) throws NodeException;
 
-    default Type getType() {
-        return Type.COPY;
+    private final BlockingQueue<Row> list = new SynchronousQueue<>();
+
+
+    @Override
+    @NonNull
+    public Row read() throws NodeReadingException {
+        try {
+            return list.take();
+        } catch (InterruptedException e) {
+            throw new NodeReadingException(e);
+        }
     }
 
-    default FailedPolicy getFailedPolicy() {
+    @Override
+    public void write(@NonNull Row row) throws NodeWritingException {
+        row = process(row);
+        try {
+            list.put(row);
+        } catch (InterruptedException e) {
+            throw new NodeWritingException(e);
+        }
+    }
+
+    @Override
+    public String[] getInputColumns() throws NodeException {
+        return new String[0];
+    }
+
+    @Override
+    public Node asNode() {
+        return InputNode.super.asNode();
+    }
+
+    @Override
+    public String[] getOutputColumns() throws NodeException {
+        return new String[0];
+    }
+
+    @NonNull
+    protected abstract Row process(@NonNull Row row) throws NodeException;
+
+    @NonNull
+    public abstract Type getType();
+
+    public FailedPolicy getFailedPolicy() {
         return FailedPolicy.TERMINATE_DATAFLOW;
     }
 
-    default Node asNode() {
-        return (Node) this;
-    }
-
-    @Override
-    default void write(Row row) throws NodeWritingException {
-
-    }
-
-    @NonNull
-    @Override
-    default Row read() throws NodeReadingException {
-        return null;
-    }
-
-    @Override
-    default String[] getInputColumns() throws NodeException {
-        return null;
-    }
-
-    @Override
-    default String[] getOutputColumns() throws NodeException {
-        return null;
-    }
 }

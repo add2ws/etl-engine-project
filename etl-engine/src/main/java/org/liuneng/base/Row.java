@@ -8,7 +8,6 @@ import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.util.Map;
 
-
 public class Row {
 
     @Setter @Getter
