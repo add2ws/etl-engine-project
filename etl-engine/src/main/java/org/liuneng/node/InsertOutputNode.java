@@ -37,7 +37,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     private String table;
     @Getter @Setter
     private String deleteSql;
-    @Getter @Setter
+    @Setter
     private boolean isDeleted = false;
     @Getter @Setter
     private int batchSize;
@@ -51,7 +51,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     private long processed;
     @Getter @Setter
     private long processingRate;
-    @Getter @Setter
+    @Setter
     private long startTime;
 
     @Override
