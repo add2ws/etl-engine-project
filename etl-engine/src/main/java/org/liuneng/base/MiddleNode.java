@@ -1,13 +1,17 @@
 package org.liuneng.base;
 
+import cn.hutool.core.util.IdUtil;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodeReadingException;
 import org.liuneng.exception.NodeWritingException;
 
+import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
+@Slf4j
 public abstract class MiddleNode extends Node implements InputNode, OutputNode {
 
     public enum Type {
@@ -20,26 +24,32 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
     }
 
 
-    private final BlockingQueue<Row> list = new SynchronousQueue<>();
+    private final BlockingQueue<Row> blockingQueue = new SynchronousQueue<>();
 
+    @Override
+    public void write(@NonNull Row row) throws NodeWritingException {
+        try {
+            row = process(row);
+//            String id = IdUtil.nanoId(5);
+//            log.info("开始写入_NO[{}]" , id);
+            blockingQueue.put(row);
+//            log.info("完成写入_NO[{}]" , id);
+        } catch (InterruptedException | NodeException e) {
+            throw new NodeWritingException(e);
+        }
+    }
 
     @Override
     @NonNull
     public Row read() throws NodeReadingException {
         try {
-            return list.take();
+//            String id = IdUtil.nanoId(5);
+//            log.info("开始读取_NO[{}]" , id);
+            Row taken = blockingQueue.take();
+//            log.info("完成读取_NO[{}]" , id);
+            return taken;
         } catch (InterruptedException e) {
             throw new NodeReadingException(e);
-        }
-    }
-
-    @Override
-    public void write(@NonNull Row row) throws NodeWritingException {
-        row = process(row);
-        try {
-            list.put(row);
-        } catch (InterruptedException e) {
-            throw new NodeWritingException(e);
         }
     }
 
@@ -68,4 +78,8 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
         return FailedPolicy.TERMINATE_DATAFLOW;
     }
 
+    @Override
+    protected void onDataflowStop() {
+        this.blockingQueue.drainTo(new ArrayList<>());
+    }
 }

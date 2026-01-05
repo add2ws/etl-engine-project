@@ -10,6 +10,7 @@ import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeReadingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import javax.sql.DataSource;
 import java.io.UnsupportedEncodingException;
@@ -69,7 +70,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
 
             long duration = System.currentTimeMillis() - startTime;
             if (resultSet.next()) {
-                Map<String, Object> row = new LinkedHashMap<>();
+                Map<String, Object> row = new LinkedCaseInsensitiveMap<>();
                 for (String column : columns) {
                     Object value = resultSet.getObject(column);
                     if (charset != null && value instanceof String) {

@@ -126,7 +126,7 @@ public class Dataflow {
     }
 
     private Row tryRead(InputNode inputNode, int _maxRetryCount) throws InterruptedException {
-
+//        log.info("try read... [Node={}]", inputNode.asNode().getName());
         for (int retriedCount = 0; retriedCount < _maxRetryCount; retriedCount++) {
             try {
                 Row row = inputNode.read();
@@ -178,6 +178,11 @@ public class Dataflow {
                             continue;
                         }
 
+                        if (row.isEnd()) {
+                            nextPipe.beWritten(row);
+                            continue;
+                        }
+
                         if (row.getPipeIndex() == i) {
                             nextPipe.beWritten(row);
                         }
@@ -209,83 +214,10 @@ public class Dataflow {
                 }
             }
         } catch (InterruptedException e) {
-            this.writeErrorLog(String.format("节点【%s】读取线程中断，异常消息：%s", inputNode.asNode().getId(), e.getMessage()), e);
+//            this.writeErrorLog(String.format("节点【%s】读取线程中断，异常消息：%s", inputNode.asNode().getId(), e.getMessage()), e);
+            this.writeErrorLog(String.format("The Node[ID=%s] reading interrupted, Error message: %s", inputNode.asNode().getId(), e.getMessage()), e);
         }
     }
-
-    /*private Row tryProcess(Row row, MiddleNode node, int _maxRetryCount) throws InterruptedException {
-        for (int i = 0; i < _maxRetryCount; i++) {
-            try {
-                Row processed = node.process(row);
-                return processed;
-            } catch (NodeException e) {
-                String msg = String.format("MiddleNode processing failed %d times, Will retry after 5 seconds... errMsg: %s", i+1, e.getMessage());
-                this.writeLogOfNode(node.asNode(), LogLevel.ERROR, msg, e);
-                Thread.sleep(retryTimeoutSeconds * 1000L);
-            }
-        }
-        this.writeLogOfNode(node.asNode(), LogLevel.ERROR, "Exceed max retry count " + _maxRetryCount);
-        return null;
-    }*/
-
-    /*private void processingOf(MiddleNode middleNode) {
-        Pipe prevPipe = middleNode.asNode().getPrevPipe().orElseThrow(() -> new DataflowException("Previous pipe is null!"));
-
-        try {
-            while (this.isRunning()) {
-                Row processedRow = tryProcess(prevPipe.beRead(), middleNode, maxRetryCount);
-                if  (processedRow == null) {
-                    if (middleNode.getFailedPolicy() == MiddleNode.FailedPolicy.TERMINATE_DATAFLOW) {
-                        this.writeLogOfNode(middleNode.asNode(), LogLevel.ERROR, "Data processing failed, The dataflow will be terminated.");
-                        this.tryStop();
-                        break;
-                    } else if (middleNode.getFailedPolicy() == MiddleNode.FailedPolicy.END_DOWNSTREAM) {
-                        this.writeLogOfNode(middleNode.asNode(), LogLevel.ERROR, "Data processing failed, All downstream nodes will be end.");
-                        processedRow = Row.ofEnd();
-                    }
-                }
-
-                if (middleNode.getType() == MiddleNode.Type.COPY) {
-                    CountDownLatch countDownLatch = new CountDownLatch(middleNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
-                    for (Pipe nextPipe : middleNode.asNode().getNextPipes()) {
-                        if (!nextPipe.isValid()) {
-                            countDownLatch.countDown();
-                            continue;
-                        }
-
-                        Row finalProcessedRow = processedRow;
-                        dataTransferThreadPool.execute(() -> {
-                            try {
-                                nextPipe.beWritten(finalProcessedRow);
-                            } catch (InterruptedException e) {
-                                log.error("Pipe 写入异常!", e);
-                                throw new RuntimeException(e);
-                            } finally {
-                                countDownLatch.countDown();
-                            }
-                        });
-                    }
-                    countDownLatch.await();//确保每个下游管道都接收到数据
-                } else if (middleNode.getType() == MiddleNode.Type.SWITCH) {
-                    for (int i = 0; i < middleNode.asNode().getNextPipes().size(); i++) {
-                        Pipe nextPipe = middleNode.asNode().getNextPipes().get(i);
-                        if (!nextPipe.isValid()) {
-                            continue;
-                        }
-
-                        if (processedRow.getPipeIndex() == i) {
-                            nextPipe.beWritten(processedRow);
-                        }
-                    }
-                }
-
-            }
-
-        } catch (InterruptedException e) {
-            this.writeErrorLog("MiddleNode processing thread was interrupted.", e);
-        }
-
-    }*/
 
     private boolean tryWrite(Row row, OutputNode outputNode, int _maxRetryCount) throws InterruptedException {
         for (int retriedCount = 0; retriedCount < _maxRetryCount; retriedCount++) {
@@ -313,6 +245,7 @@ public class Dataflow {
                 Row row = prevPipe.beRead();
                 boolean success = this.tryWrite(row, outputNode, maxRetryCount);
                 if (!success) {
+                    this.tryStop();
                     break;
                 }
 
@@ -349,24 +282,31 @@ public class Dataflow {
     }
 
     private void recursiveStartNodes(Node currentNode) {
-        dataTransferThreadPool.execute(() -> {
-            this.writeLogOfNode(currentNode, LogLevel.INFO, "开始初始化...");
-            currentNode.prestart(this);
-            this.writeLogOfNode(currentNode, LogLevel.INFO, "初始化完成。");
+        this.writeLogOfNode(currentNode, LogLevel.INFO, "开始初始化...");
+        currentNode.prestart(this);
+        this.writeLogOfNode(currentNode, LogLevel.INFO, "初始化完成。");
 
-            if (currentNode instanceof InputNode) {
-                readingAndWriteToPipes((InputNode) currentNode);
-            }
+        if (currentNode instanceof InputNode) {
+            this.dataTransferThreadPool.execute(() -> {
+                try {
+                    readingAndWriteToPipes((InputNode) currentNode);
+                } catch (Exception e) {
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Catched unexpected exception! The dataflow will terminate. error message: " + e.getMessage());
+                    this.tryStop();
+                }
+            });
+        }
 
-            if (currentNode instanceof OutputNode) {
-                readFromPipeAndWriting((OutputNode) currentNode);
-            }
-
-//            if (currentNode instanceof MiddleNode) {
-//                processingOf((MiddleNode) currentNode);
-//            }
-        });
-
+        if (currentNode instanceof OutputNode) {
+            this.dataTransferThreadPool.execute(() -> {
+                try {
+                    readFromPipeAndWriting((OutputNode) currentNode);
+                } catch (Exception e) {
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Catched unexpected exception! The dataflow will terminate. error message: " + e.getMessage());
+                    this.tryStop();
+                }
+            });
+        }
 
         for (Pipe nextPipe : currentNode.getNextPipes()) {
             if (nextPipe.isValid() && nextPipe.to().isPresent()) {
@@ -433,13 +373,11 @@ public class Dataflow {
 
         this.status = Status.STOPPING;
         DataflowHelper.of(this).forEachNodesAndPipes((node, pipe) -> {
-            this.dataTransferThreadPool.execute(() -> {
-                if (node != null) {
-                    node.onDataflowStop();
-                } else if (pipe != null) {
-                    pipe.stop();
-                }
-            });
+            if (node != null) {
+                node.onDataflowStop();
+            } else if (pipe != null) {
+                pipe.stop();
+            }
             return true;
         });
         this.dataTransferThreadPool.shutdown();

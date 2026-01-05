@@ -16,7 +16,8 @@ public class ConditionNode extends MiddleNode {
     @Override
     protected @NonNull Row process(@NonNull Row row) throws NodeException {
 
-        if (row.get("gender").equals("1")) {
+        Object gender = row.get("gender");
+        if ("1".equals(gender)) {
             row.setPipeIndex(0);
             return row;
         } else {
@@ -25,8 +26,4 @@ public class ConditionNode extends MiddleNode {
         }
     }
 
-    @Override
-    protected void onDataflowStop() {
-
-    }
 }

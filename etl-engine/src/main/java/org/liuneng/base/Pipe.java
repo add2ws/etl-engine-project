@@ -4,9 +4,8 @@ import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -95,22 +94,11 @@ public class Pipe {
     }
 
     protected void initialize(Dataflow dataFlow)  {
-
         this.dataflowInstance = dataFlow;
-//        this.dataflowInstance.getDataTransferExecutor().execute(() -> {
-//            try {
-//                dataflowInstance.awaitStoppingSignal();
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            } finally {
-//                bufferQueue.drainTo(new ArrayList<>());
-//            }
-//        });
     }
 
     protected void stop() {
         closed = true;
-        bufferQueue.clear();
-//        bufferQueue.drainTo(new ArrayList<>());
+        this.bufferQueue.drainTo(new ArrayList<>());
     }
 }
