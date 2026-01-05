@@ -291,7 +291,7 @@ public class Dataflow {
                 try {
                     readingAndWriteToPipes((InputNode) currentNode);
                 } catch (Exception e) {
-                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Catched unexpected exception! The dataflow will terminate. error message: " + e.getMessage());
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Caught an unexpected exception! The dataflow will be terminated. Error message: " + e.getMessage());
                     this.tryStop();
                 }
             });
@@ -302,7 +302,7 @@ public class Dataflow {
                 try {
                     readFromPipeAndWriting((OutputNode) currentNode);
                 } catch (Exception e) {
-                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Catched unexpected exception! The dataflow will terminate. error message: " + e.getMessage());
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Caught an unexpected exception! The dataflow will be terminated. Error message: " + e.getMessage());
                     this.tryStop();
                 }
             });
