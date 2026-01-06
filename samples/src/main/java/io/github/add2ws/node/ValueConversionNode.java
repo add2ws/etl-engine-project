@@ -11,12 +11,14 @@ public class ValueConversionNode extends MiddleNode {
 
     @Override
     protected @NonNull Row process(@NonNull Row row) throws NodeException {
+        //将gender列值转换到gender_name列中
         if ("1".equals(row.get("gender"))) {
             row.put("gender_name", "male");
         } else {
             row.put("gender_name", "female");
         }
 
+        //将address列脱敏处理
         String address = String.valueOf(row.get("address"));
         if (address != null) {
             String masked = address.replaceAll("^(.).*(.)$", "$1***$2");
@@ -27,12 +29,15 @@ public class ValueConversionNode extends MiddleNode {
     }
 
     @Override
-    public @NonNull Type getType() {
-        return Type.COPY;
+    public String[] getColumns() throws NodeException {
+        //新增gender_name列
+        return new String[]{"gender_name"};
     }
 
     @Override
-    public String[] getColumns() throws NodeException {
-        return new String[]{"gender_name"};
+    public @NonNull Type getType() {
+        //中间节点类型：当后面连接多个节点时，对途径的数据流是拷贝还是分发
+        return Type.COPY;
     }
+
 }
