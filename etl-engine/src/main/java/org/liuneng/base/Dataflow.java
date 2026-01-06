@@ -5,11 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.*;
-import org.liuneng.util.DataflowHelper;
-import org.liuneng.util.StrUtil;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,17 +37,15 @@ public class Dataflow {
 
     @Getter
     @Setter
+    private int retryTimeoutSeconds = 3;
+
+    @Getter
+    @Setter
     private int processingThresholdLog = 20000;
 
     private final AtomicInteger allCompetedOutputCount = new AtomicInteger(0);
 
-    private final LocalDateTime createTime;
-
-    private int increasedId = 0;
-
-    private final ExecutorService dataTransferExecutor;
-
-//    protected final Object blockLocker  = new Object();;
+    private final ExecutorService dataTransferThreadPool;
 
     @Getter
     private long startTime;
@@ -66,15 +60,14 @@ public class Dataflow {
     @Setter
     private boolean printLogToConsole = true;
 
-    /*private final List<Consumer<EtlLog>> logListeners = new ArrayList<>();
 
-    public void addLogListener(Consumer<EtlLog> logListener) {
-        logListeners.add(logListener);
+
+    public Dataflow(Node headNode) {
+        this.id = "Dataflow-" + IdUtil.fastSimpleUUID();
+        this.head = headNode;
+        this.status = Status.IDLE;
+        this.dataTransferThreadPool = Executors.newCachedThreadPool(r -> new Thread(r, "DataTransferThread-" + this.id));
     }
-
-    public void removeLogListener(Consumer<EtlLog> logListener) {
-        logListeners.remove(logListener);
-    }*/
 
     protected void writeInfoLog(String message) {
         writeLogOfNode(null, LogLevel.INFO, message);
@@ -103,17 +96,25 @@ public class Dataflow {
             return;
         }
 
-        if  (logLevel == LogLevel.INFO) {
+        if (logLevel == LogLevel.INFO) {
             if (node == null) {
-                log.info("数据流[ID={}]日志消息：{}", this.getId(), message);
+                log.info("Log message from Dataflow[ID={}]:{}", this.getId(), message);
             } else {
-                log.info("节点：{} 的日志消息：{}", node.getName(), message);
+                log.info("Log message from Node[Name={}]: {}", node.getName(), message);
             }
         } else if (logLevel == LogLevel.ERROR) {
             if (node == null) {
-                log.error("数据流[ID={}]异常消息：{}", this.getId(), message, e);
+                if (e != null) {
+                    log.error("Error message from Dataflow[ID={}]:{}", this.getId(), message, e);
+                } else {
+                    log.error("Error message from Dataflow[ID={}]:{}", this.getId(), message);
+                }
             } else {
-                log.error("节点：{} 的异常消息：{}", node.getName(), message, e);
+                if (e != null) {
+                    log.error("Error message from Node[Name={}]: {}", node.getName(), message, e);
+                } else {
+                    log.error("Error message from Node[Name={}]: {}", node.getName(), message);
+                }
             }
         }
 
@@ -134,48 +135,71 @@ public class Dataflow {
         this.writeLogOfNode(node, logLevel, message, null);
     }
 
-    private void readingFrom(InputNode inputNode) {
-        dataTransferExecutor.execute(() -> {
-            String logMsg = String.format("%s start reading...", inputNode.asNode().getName());
-            this.writeInfoLog(logMsg);
+    private Row tryRead(InputNode inputNode, int _maxRetryCount) throws InterruptedException {
+//        log.info("try read... [Node={}]", inputNode.asNode().getName());
+        for (int retriedCount = 0; retriedCount < _maxRetryCount && this.isRunning(); retriedCount++) {
+            try {
+                Row row = inputNode.read();
+                return row;
+            } catch (NodeReadingException e) {
+                String msg = String.format("InputNode reading exception！error message: %s\nReading will retry after %d seconds...", e.getMessage(), retryTimeoutSeconds);
+                this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, msg, e);
+                Thread.sleep(retryTimeoutSeconds * 1000L);
+            }
+        }
+        if (this.isRunning()) {
+            this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, "InputNode reading exceed max retry count " + _maxRetryCount);
+        }
+        return null;
+    }
 
-            long currentStartTime = System.currentTimeMillis();
-            int readTotal = 0;
+    private void readingAndWriteToPipes(InputNode inputNode) {
+        String logMsg = String.format("%s start reading...", inputNode.asNode().getName());
+        this.writeInfoLog(logMsg);
 
-            int errorCount = 0;
+        long currentStartTime = System.currentTimeMillis();
+        int readTotal = 0;
+        try {
             while (this.isRunning()) {
-                try {
-                    Row row;
-                    try {
-                        row = inputNode.read();
-                    } catch (NodeReadingException e) {
-                        if (++errorCount <= maxRetryCount) {
-                            String msg = String.format("InputNode reading exception！%s will retry after 5 seconds...", e.getMessage());
-                            this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, msg);
-                            Thread.sleep(3000);
-                            continue;
-                        } else {
-                            this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, "已重试" + maxRetryCount + "次仍异常，数据流强制结束。");
-                            break;
-                        }
+                Row row = tryRead(inputNode, maxRetryCount);
+                if (row == null) {
+                    this.writeLogOfNode(inputNode.asNode(), LogLevel.ERROR, "InputNode reading failed, The dataflow will be terminated.");
+                    this.tryStop(true);
+                    break;
+                }
 
-                    }
-                    errorCount = 0;
-
-                    if (row != null && !row.isEnd()) {
-                        readTotal++;
-                    }
-
+                if (!row.isEnd()) {
+                    readTotal++;
                     if (readTotal % processingThresholdLog == 0) {
                         double elapsedSeconds = (System.currentTimeMillis() - currentStartTime) / 1000.0;
                         elapsedSeconds = (elapsedSeconds == 0 ? 0.001 : elapsedSeconds);
-//                        double currentSpeed = ;
                         double avgSpeed = (double) readTotal / (System.currentTimeMillis() - startTime) * 1000.0;
-                        String msg = String.format("读取总量=%d, 当前速度=%.0f条/秒，平均速度%.0f条/秒", readTotal, processingThresholdLog / elapsedSeconds, avgSpeed);
+                        String msg = String.format("Total read = %d, current speed = %.0f records/s, average speed = %.0f records/s", readTotal, processingThresholdLog / elapsedSeconds, avgSpeed);
                         this.writeLogOfNode(inputNode.asNode(), LogLevel.INFO, msg);
                         currentStartTime = System.currentTimeMillis();
                     }
+                } else {
+                    String msg = String.format("InputNode reading completed，%d total.", readTotal);
+                    this.writeLogOfNode(inputNode.asNode(), LogLevel.INFO, msg);
+                }
 
+                if (inputNode instanceof MiddleNode && ((MiddleNode) inputNode).getType() == MiddleNode.Type.SWITCH) {
+                    for (int i = 0; i < inputNode.asNode().getNextPipes().size(); i++) {
+                        Pipe nextPipe = inputNode.asNode().getNextPipes().get(i);
+                        if (!nextPipe.isValid()) {
+                            continue;
+                        }
+
+                        if (row.isEnd()) {
+                            nextPipe.beWritten(row);
+                            continue;
+                        }
+
+                        if (row.getPipeIndex() == i) {
+                            nextPipe.beWritten(row);
+                        }
+                    }
+                } else {
                     CountDownLatch countDownLatch = new CountDownLatch(inputNode.asNode().getNextPipes().size());//确保每个下游管道都接收到数据
                     for (Pipe nextPipe : inputNode.asNode().getNextPipes()) {
                         if (!nextPipe.isValid()) {
@@ -183,11 +207,11 @@ public class Dataflow {
                             continue;
                         }
 
-                        dataTransferExecutor.execute(() -> {
+                        dataTransferThreadPool.execute(() -> {
                             try {
                                 nextPipe.beWritten(row);
                             } catch (InterruptedException e) {
-                                log.error("Pipe 写入异常!", e);
+                                log.error("Pipe write exception!", e);
                                 throw new RuntimeException(e);
                             } finally {
                                 countDownLatch.countDown();
@@ -195,126 +219,122 @@ public class Dataflow {
                         });
                     }
                     countDownLatch.await();//确保每个下游管道都接收到数据
+                }
 
-                    if (row == null || row.isEnd()) {
-                        String msg = String.format("InputNode reading completed，%d total.", readTotal);
-                        this.writeLogOfNode(inputNode.asNode(), LogLevel.INFO, msg);
-                        break;//节点数据完全读取结束
-                    }
-
-                } catch (InterruptedException e) {
-                    this.writeErrorLog(String.format("节点【%s】读取线程中断，异常消息：%s", inputNode.asNode().getId(), e.getMessage()), e);
+                if (row.isEnd()) {// reading completed , break the foreach
+                    break;
                 }
             }
-        });
+        } catch (InterruptedException e) {
+//            this.writeErrorLog(String.format("节点【%s】读取线程中断，异常消息：%s", inputNode.asNode().getId(), e.getMessage()), e);
+            this.writeErrorLog(String.format("The Node[ID=%s] reading interrupted, Error message: %s", inputNode.asNode().getId(), e.getMessage()), e);
+        }
     }
 
-    private void writingTo(OutputNode outputNode) {
-        Pipe previousPipe = outputNode.asNode().getPreviousPipe().orElseThrow(() -> new RuntimeException("数据流配置有误，获取前一个管道为空！"));
+    private boolean tryWrite(Row row, OutputNode outputNode, int _maxRetryCount) throws InterruptedException {
+        for (int retriedCount = 0; retriedCount < _maxRetryCount && this.isRunning(); retriedCount++) {
+            try {
+                outputNode.write(row);
+                return true;
+            } catch (NodeWritingException e) {
+                this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, String.format("OutputNode reading exception！error message: %s\nWriting will retry after %d seconds...", e.getMessage(), retryTimeoutSeconds), e);
+                Thread.sleep(retryTimeoutSeconds * 1000L);
+            }
+        }
+        if (this.isRunning()) {
+            this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, "OutputNode writing exceed max retry count " + _maxRetryCount);
+        }
+        return false;
+    }
+
+    private void readFromPipeAndWriting(OutputNode outputNode) {
+        Pipe prevPipe = outputNode.asNode().getPrevPipe().orElseThrow(() -> new RuntimeException("Data flow configuration error: The previous pipeline is empty!"));
         allCompetedOutputCount.addAndGet(1);
-        dataTransferExecutor.execute(() -> {
-            String logMsg = String.format("%s start writing...", outputNode.asNode().getName());
-            this.writeInfoLog(logMsg);
-
-            long currentNodeStartTime = System.currentTimeMillis();
-            int writtenTotal = 0;
-            int errorCount = 0;
+        String logMsg = String.format("%s start writing...", outputNode.asNode().getName());
+        this.writeInfoLog(logMsg);
+        long currentNodeStartTime = System.currentTimeMillis();
+        int writtenTotal = 0;
+        try {
             while (this.isRunning()) {
-                try {
-                    Row row = null;
-                    if (errorCount == 0) {
-                        row = previousPipe.beRead();
-                    }
-                    try {
-                        outputNode.write(row);
-                    } catch (NodeWritingException e) {
-                        if (++errorCount <= maxRetryCount) {
-                            logMsg = String.format("写入异常！%s 3秒后重试。。。", e.getMessage());
-                            this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, logMsg);
-                            Thread.sleep(3000);
-                            continue;
-                        } else {
-                            this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, "已重试" + maxRetryCount + "次仍异常，数据流强制结束。");
-                            break;
-                        }
-                    }
-                    errorCount = 0;
+                Row row = prevPipe.beRead();
+                boolean success = this.tryWrite(row, outputNode, maxRetryCount);
+                if (!success) {
+                    this.tryStop(true);
+                    break;
+                }
 
-                    if (row == null || row.isEnd()) {
-                        logMsg = String.format("写入结束，共%d条。", writtenTotal);
-                        this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
-                        break;
-                    }
+                if (row == null || row.isEnd()) {
+                    logMsg = String.format("Write completed, total: %d", writtenTotal);
+                    this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
+                    break;
+                }
 
-                    if (++writtenTotal % processingThresholdLog == 0) {
-                        double elapsed = System.currentTimeMillis() - currentNodeStartTime;
-                        elapsed = (elapsed == 0 ? 0.001 : elapsed);
-                        logMsg = String.format("输出总量=%d, 当前速度=%.0f条/秒，平均速度%.0f条/秒，当前管道(%d/%d)"
-                                , writtenTotal
-                                , processingThresholdLog / elapsed * 1000
-                                , writtenTotal / ((System.currentTimeMillis() - startTime) / 1000.0)
-                                , previousPipe.getCurrentBufferSize()
-                                , previousPipe.getBufferCapacity()
-                        );
-                        this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
-                        currentNodeStartTime = System.currentTimeMillis();
-                    }
-                } catch (InterruptedException e) {
-                    this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, "节点写入线程中断，异常消息：" + e.getMessage());
+                if (++writtenTotal % processingThresholdLog == 0) {
+                    double elapsed = System.currentTimeMillis() - currentNodeStartTime;
+                    elapsed = (elapsed == 0 ? 0.001 : elapsed);
+                    logMsg = String.format("Total output = %d, current speed = %.0f records/s, average speed = %.0f records/s, current pipeline (%d/%d)"
+                            , writtenTotal
+                            , processingThresholdLog / elapsed * 1000
+                            , writtenTotal / ((System.currentTimeMillis() - startTime) / 1000.0)
+                            , prevPipe.getCurrentBufferSize()
+                            , prevPipe.getBufferCapacity()
+                    );
+                    this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
+                    currentNodeStartTime = System.currentTimeMillis();
                 }
             }
+        } catch (InterruptedException e) {
+            this.writeLogOfNode(outputNode.asNode(), LogLevel.ERROR, "Node writer thread interrupted. Exception message:" + e.getMessage(), e);
+        }
 
-            logMsg = String.format("输出结束，输出总量=%d", writtenTotal);
-            this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
-            if (allCompetedOutputCount.addAndGet(-1) == 0) {
-                this.writeInfoLog("所有输出节点已写入结束，准备结束数据流线程池。。。");
-                this.tryStop();
-            }
-        });
+        logMsg = String.format("Output finished. Total output = %d", writtenTotal);
+        this.writeLogOfNode(outputNode.asNode(), LogLevel.INFO, logMsg);
+        if (allCompetedOutputCount.addAndGet(-1) == 0) {
+            this.writeInfoLog("All output nodes have finished writing. Preparing to shutdown the dataflow thread pool...");
+            this.tryStop(false);
+        }
     }
 
     private void recursiveStartNodes(Node currentNode) {
-        String timeStr = createTime.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-
-        if (StrUtil.isBlank(currentNode.getId())) {
-            String nodeID = String.format("%s-%d_%s", currentNode.getClass().getSimpleName(), ++increasedId, timeStr);
-            currentNode.setId(nodeID);
+        this.writeLogOfNode(currentNode, LogLevel.INFO, "Start initializing...");
+        try {
+            currentNode.prestart(this);
+        } catch (NodePrestartException e) {
+            this.writeLogOfNode(currentNode,  LogLevel.ERROR, e.getMessage(), e);
+            this.tryStop(true);
+            return;
         }
-        this.writeLogOfNode(currentNode, LogLevel.INFO, "开始初始化...");
-        currentNode.prestart(this);
-//        try {
-//        } catch (NodePrestartException e) {
-//            throw new Exception(String.format("节点[%s]初始化失败！error message: %s", currentNode.getId(), e.getMessage()));
-//        }
-        this.writeLogOfNode(currentNode, LogLevel.INFO, "初始化完成。");
-
-        if (currentNode instanceof InputNode) {
-            readingFrom((InputNode) currentNode);
-        }
-
-        if (currentNode instanceof OutputNode) {
-            writingTo((OutputNode) currentNode);
-        }
+        this.writeLogOfNode(currentNode, LogLevel.INFO, "Completed initialization.");
 
         for (Pipe nextPipe : currentNode.getNextPipes()) {
             if (nextPipe.isValid() && nextPipe.to().isPresent()) {
-                if (StrUtil.isBlank(nextPipe.getId())) {
-                    String pipeID = String.format("Pipeline-%d_%s", ++increasedId, timeStr);
-                    nextPipe.setId(pipeID);
-                }
                 nextPipe.initialize(this);
                 this.recursiveStartNodes(nextPipe.to().get().asNode());
             }
         }
-    }
 
+        if (currentNode instanceof InputNode) {
+            this.dataTransferThreadPool.execute(() -> {
+                try {
+                    readingAndWriteToPipes((InputNode) currentNode);
+                } catch (Exception e) {
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Caught an unexpected exception! The dataflow will be terminated. Error message: " + e.getMessage(), e);
+                    this.tryStop(true);
+                }
+            });
+        }
 
-    public Dataflow(Node headNode) {
-        this.id = "Dataflow"+IdUtil.fastSimpleUUID();
-        this.head = headNode;
-        this.createTime = LocalDateTime.now();
-        this.status = Status.IDLE;
-        this.dataTransferExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "DataTransmissionThread-" + this.id));
+        if (currentNode instanceof OutputNode) {
+            this.dataTransferThreadPool.execute(() -> {
+                try {
+                    readFromPipeAndWriting((OutputNode) currentNode);
+                } catch (Exception e) {
+                    this.writeLogOfNode(currentNode, LogLevel.ERROR, "Caught an unexpected exception! The dataflow will be terminated. Error message: " + e.getMessage(), e);
+                    this.tryStop(true);
+                }
+            });
+        }
+
     }
 
     public void syncStart() throws DataflowException {
@@ -324,10 +344,9 @@ public class Dataflow {
 
     public boolean syncStart(long timeout, TimeUnit timeUnit) {
         if (status == Status.STOPPED || status == Status.STOPPING) {
-            throw new DataflowPrestartException("启动失败，数据流已经结束！");
+            throw new DataflowPrestartException("Startup failed. Dataflow has already ended!");
         }
 
-        String logMsg;
         Date now = new Date();
         this.writeInfoLog("开始执行。。。");
         this.startTime = now.getTime();
@@ -335,65 +354,79 @@ public class Dataflow {
         try {
             this.recursiveStartNodes(head);
         } catch (Exception e) {
-            this.tryStop();
+            this.tryStop(true);
             this.writeErrorLog(e.getMessage(), e);
         }
         boolean notTimeout = false;
         try {
-            notTimeout = this.dataTransferExecutor.awaitTermination(timeout, timeUnit);
+            notTimeout = this.dataTransferThreadPool.awaitTermination(timeout, timeUnit);
             endTime = System.currentTimeMillis();
             if (notTimeout) {
-                this.writeInfoLog(String.format("运行结束，总耗时%.2fs", (endTime - startTime) / 1000f));
+                this.writeInfoLog(String.format("Execution finished. Total time elapsed: %.2fs", (endTime - startTime) / 1000f));
             } else {
-                this.dataTransferExecutor.shutdownNow();
-                this.writeErrorLog("运行超时!已执行强制关闭！");
+                this.dataTransferThreadPool.shutdownNow();
+                this.writeErrorLog("Execution timeout! Forced shutdown has been executed!");
             }
         } catch (InterruptedException e) {
             endTime = System.currentTimeMillis();
-            this.dataTransferExecutor.shutdownNow();
-            this.writeErrorLog(String.format("任务意外中断，已执行强制关闭！总耗时%.2fs", (endTime - startTime) / 1000f), e);
+            this.dataTransferThreadPool.shutdownNow();
+            this.writeErrorLog(String.format("Task interrupted unexpectedly! Forced shutdown has been executed! Total time elapsed: %.2fs", (endTime - startTime) / 1000f), e);
         }
 
-        if (this.dataTransferExecutor.isTerminated()) {
-            this.writeInfoLog("数据流线程池关闭正常。");
+        if (this.dataTransferThreadPool.isTerminated()) {
+            this.writeInfoLog("Dataflow thread pool shutdown successfully.");
         } else {
-            this.writeErrorLog("数据流线程池未正常关闭！");
+            this.writeErrorLog("Data flow thread pool failed to shut down normally!");
         }
         this.status = Status.STOPPED;
         return notTimeout;
     }
 
-    private void tryStop() {
-        if (status == Status.STOPPING || status == Status.STOPPED) {
-            return;
-        }
+    private void tryStop(boolean force) throws DataflowStoppingException {
+//        if (status == Status.STOPPING || status == Status.STOPPED) {
+//            throw new DataflowStoppingException("Dataflow has been stopped!");
+//        }
 
-        if (status == Status.IDLE) {
+        if (status == Status.IDLE || status == Status.STOPPING || status == Status.STOPPED) {
             status = Status.STOPPED;
             return;
         }
 
         this.status = Status.STOPPING;
-        DataflowHelper.forEachNodesOrPipes(this, (node, pipe) -> {
-            this.dataTransferExecutor.execute(() -> {
-                if (node != null) {
-                    node.onDataflowStop();
-                } else if (pipe != null) {
-                    pipe.stop();
-                }
-            });
+        DataflowHelper.of(this).forEachNodesAndPipes((node, pipe) -> {
+            if (node != null) {
+                node.onDataflowStop();
+            } else if (pipe != null) {
+                pipe.stop();
+            }
             return true;
         });
-        this.dataTransferExecutor.shutdown();
+        if (force) {
+            this.dataTransferThreadPool.shutdownNow();
+        } else {
+            this.dataTransferThreadPool.shutdown();
+        }
+/*
+        if (this.dataTransferThreadPool.isShutdown()) {
+            this.writeInfoLog("Dataflow Thread pool are shutdown.");
+        } else {
+            this.writeErrorLog("Dataflow Thread pool are not shutdown yet!");
+        }
+
+        if (this.dataTransferThreadPool.isTerminated()) {
+            this.writeInfoLog("Dataflow Thread pool has been terminated successfully.");
+        } else {
+            this.writeErrorLog("Dataflow Thread pool has not terminated yet!");
+        }*/
     }
 
-    public void asyncStop(long timeoutMillis) {
-        this.tryStop();
+    public void asyncStop(long timeoutMillis)  throws DataflowStoppingException {
+        this.tryStop(false);
         new Thread(() -> {
             try {
                 Thread.sleep(timeoutMillis);
-                if (!dataTransferExecutor.isTerminated()) {
-                    dataTransferExecutor.shutdownNow();
+                if (!dataTransferThreadPool.isTerminated()) {
+                    dataTransferThreadPool.shutdownNow();
                 }
 
             } catch (InterruptedException e) {
@@ -405,22 +438,22 @@ public class Dataflow {
     }
 
     public void syncStop(long timeout, TimeUnit timeUnit) throws DataflowStoppingException {
-        this.tryStop();
+        this.tryStop(false);
         String logMsg;
         try {
-            boolean notTimeout = this.dataTransferExecutor.awaitTermination(timeout, timeUnit);
+            boolean notTimeout = this.dataTransferThreadPool.awaitTermination(timeout, timeUnit);
             if (notTimeout) {
-                logMsg = "停止成功。";
+                logMsg = "Stop successful.";
                 this.writeInfoLog(logMsg);
             } else {
-                this.dataTransferExecutor.shutdownNow();
-                logMsg = "停止超时，已执行强制关闭！";
+                this.dataTransferThreadPool.shutdownNow();
+                logMsg = "Stop timeout, Has executed forced termination.";
                 this.writeErrorLog(logMsg);
                 throw new DataflowStoppingException(logMsg);
             }
         } catch (InterruptedException e) {
-            this.dataTransferExecutor.shutdownNow();
-            logMsg = "停止被中断，已执行强制关闭！";
+            this.dataTransferThreadPool.shutdownNow();
+            logMsg = "Stop interrupted! Forced shutdown has been executed!";
             this.writeErrorLog(logMsg, e);
             throw new DataflowStoppingException(logMsg);
         }

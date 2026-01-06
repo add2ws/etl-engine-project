@@ -1,50 +1,84 @@
 package org.liuneng.base;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodeReadingException;
 import org.liuneng.exception.NodeWritingException;
-import org.liuneng.util.Tuple2;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
+@Slf4j
 public abstract class MiddleNode extends Node implements InputNode, OutputNode {
-    private final BlockingQueue<Row> list = new SynchronousQueue<>();
+
+    private boolean isClosed = false;
+
+    public enum Type {
+        COPY, SWITCH
+    }
+
+    public enum FailedPolicy {
+        TERMINATE_DATAFLOW,
+        END_DOWNSTREAM
+    }
+
+
+    private final BlockingQueue<Row> blockingQueue = new SynchronousQueue<>();
 
     @Override
-    public Row read() throws NodeReadingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
+        if (isClosed) {
+            return;
+        }
         try {
-            return list.take();
+            row = process(row);
+//            String id = IdUtil.nanoId(5);
+//            log.info("开始写入_NO[{}]" , id);
+            blockingQueue.put(row);
+//            log.info("完成写入_NO[{}]" , id);
+        } catch (InterruptedException | NodeException e) {
+            throw new NodeWritingException(e);
+        }
+    }
+
+    @Override
+    @NonNull
+    public Row read() throws NodeReadingException {
+        if (isClosed) {
+            throw new NodeReadingException("Node is closed");
+        }
+
+        try {
+//            String id = IdUtil.nanoId(5);
+//            log.info("开始读取_NO[{}]" , id);
+            Row taken = blockingQueue.take();
+//            log.info("完成读取_NO[{}]" , id);
+            return taken;
         } catch (InterruptedException e) {
             throw new NodeReadingException(e);
         }
     }
 
     @Override
-    public void write(Row row) throws NodeWritingException {
-        row = process(row);
-        try {
-            list.put(row);
-        } catch (InterruptedException e) {
-            throw new NodeWritingException(e);
-        }
-    }
-
-    public abstract Row process(Row row);
-
-    public List<Tuple2<String, String>> getColumnMapping() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public String[] getInputColumns() throws NodeException {
-        return this.getPreviousNode().orElseThrow(() -> new NodeException("无法获得上个节点的列")).getInputColumns();
-    }
-
-    @Override
     public Node asNode() {
-        return this;
+        return InputNode.super.asNode();
+    }
+
+    @NonNull
+    protected abstract Row process(@NonNull Row row) throws NodeException;
+
+    @NonNull
+    public abstract Type getType();
+
+    public FailedPolicy getFailedPolicy() {
+        return FailedPolicy.TERMINATE_DATAFLOW;
+    }
+
+    @Override
+    protected void onDataflowStop() {
+        isClosed = true;
+        this.blockingQueue.drainTo(new ArrayList<>());
     }
 }

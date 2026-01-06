@@ -6,28 +6,46 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
+import java.util.HashMap;
 import java.util.Map;
-
 
 public class Row {
 
     @Setter @Getter
-    private boolean end;
+    private boolean end = false;
 
-    private final Map<String, Object> data = new LinkedCaseInsensitiveMap<>();
+    @Setter @Getter
+    private boolean empty = false;
 
-    private Row() {}
+    @Setter @Getter
+    private int pipeIndex = 0;
+
+    private final Map<String, Object> data;
+
+    private Row(Map<String, Object> data) {
+        this.data = data;
+    }
 
     public static Row ofEnd() {
-        Row row = new Row();
+        Row row = new Row(new HashMap<>());
         row.setEnd(true);
         return row;
     }
 
-    public static Row fromMap(Map<String, Object> d) {
-        Row row = new Row();
-        row.data.putAll(d);
-        row.end = false;
+    public static Row ofEmpty() {
+        Row row = new Row(new HashMap<>());
+        row.setEmpty(true);
+        return row;
+    }
+
+    public static Row ofMap(Map<String, Object> data) {
+        Row row = new Row(data);
+        return row;
+    }
+
+    public static Row ofMap(Map<String, Object> data, int pipeIndex) {
+        Row row = new Row(data);
+        row.setPipeIndex(pipeIndex);
         return row;
     }
 

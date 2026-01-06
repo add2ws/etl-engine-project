@@ -1,16 +1,15 @@
-package io.github.add2ws;
+package io.github.add2ws.runner;
 
 import cn.hutool.json.JSONUtil;
 import io.github.add2ws.util.DataSourceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Pipe;
-import org.liuneng.node.FileOutputNode;
-import org.liuneng.node.SqlInputNode;
-import org.liuneng.node.UpsertOutputNode;
-import org.liuneng.node.UpsertTag;
-import org.liuneng.util.DBUtil;
-import org.liuneng.util.DataflowHelper;
+import org.liuneng.nodeextension.FileOutputNode;
+import org.liuneng.nodeextension.SqlInputNode;
+import org.liuneng.nodeextension.UpsertOutputNode;
+import org.liuneng.nodeextension.UpsertTag;
+import org.liuneng.base.DataflowHelper;
 import org.liuneng.util.Tuple2;
 import org.liuneng.util.Tuple3;
 
@@ -86,7 +85,7 @@ public class SamplesMain {
 
         Dataflow dataflow = testEtlTask();
         log.info("Dataflow initialized ... ID={}", dataflow.getId());
-        DataflowHelper.logListener(dataflow, log -> {
+        DataflowHelper.of(dataflow).logListener(log -> {
             System.out.println("logListener==============>" + log.getMessage());
         });
         dataflow.setProcessingThresholdLog(20000);

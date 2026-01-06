@@ -1,9 +1,7 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
-import org.liuneng.base.Dataflow;
-import org.liuneng.base.Node;
-import org.liuneng.base.OutputNode;
-import org.liuneng.base.Row;
+import lombok.NonNull;
+import org.liuneng.base.*;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
@@ -19,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DeleteOutputNode extends Node implements OutputNode {
+public class DeleteOutputNode extends Node implements OutputNode, DataProcessingMonitor {
     final static Logger log = LoggerFactory.getLogger(DeleteOutputNode.class);
 
     private DataSource dataSource;
@@ -61,18 +59,43 @@ public class DeleteOutputNode extends Node implements OutputNode {
     }
 
     @Override
+    public long getInserted() {
+        return 0;
+    }
+
+    @Override
+    public long getInsertingRate() {
+        return 0;
+    }
+
+    @Override
+    public long getUpdated() {
+        return 0;
+    }
+
+    @Override
+    public long getUpdatingRate() {
+        return 0;
+    }
+
+    @Override
+    public long getDeleted() {
+        return 0;
+    }
+
+    @Override
+    public long getDeletingRate() {
+        return 0;
+    }
+
+    @Override
     public long getStartTime() {
         return dataflowInstance.getStartTime();
     }
 
     @Override
-    public void write(Row row) throws NodeWritingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
 
-    }
-
-    @Override
-    public String[] getOutputColumns() throws NodeException {
-        return new String[0];
     }
 
     public String[] getTableColumns() throws SQLException {

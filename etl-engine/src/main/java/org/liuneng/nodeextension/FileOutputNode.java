@@ -1,9 +1,7 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
-import org.liuneng.base.Dataflow;
-import org.liuneng.base.Node;
-import org.liuneng.base.OutputNode;
-import org.liuneng.base.Row;
+import lombok.NonNull;
+import org.liuneng.base.*;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.CsvConverter;
@@ -17,7 +15,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class FileOutputNode extends Node implements OutputNode {
+public class FileOutputNode extends Node implements OutputNode, DataProcessingMonitor {
     final static Logger log = LoggerFactory.getLogger(FileOutputNode.class);
 
     private final String filePath;
@@ -53,12 +51,42 @@ public class FileOutputNode extends Node implements OutputNode {
     }
 
     @Override
+    public long getInserted() {
+        return 0;
+    }
+
+    @Override
+    public long getInsertingRate() {
+        return 0;
+    }
+
+    @Override
+    public long getUpdated() {
+        return 0;
+    }
+
+    @Override
+    public long getUpdatingRate() {
+        return 0;
+    }
+
+    @Override
+    public long getDeleted() {
+        return 0;
+    }
+
+    @Override
+    public long getDeletingRate() {
+        return 0;
+    }
+
+    @Override
     public long getStartTime() {
         return 0;
     }
 
     @Override
-    public void write(Row row) throws NodeWritingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
 
         try {
             if (format == Format.JSON) {
@@ -105,12 +133,6 @@ public class FileOutputNode extends Node implements OutputNode {
             firstWrite = false;
         }
     }
-
-    @Override
-    public String[] getOutputColumns() {
-        return new String[0];
-    }
-
 
     @Override
     protected void prestart(Dataflow dataflow) throws NodePrestartException {

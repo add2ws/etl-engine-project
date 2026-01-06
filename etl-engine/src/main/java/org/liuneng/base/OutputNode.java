@@ -1,19 +1,16 @@
 package org.liuneng.base;
 
+import lombok.NonNull;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodeWritingException;
 
 public interface OutputNode {
 
-    long getProcessed();
+    void write(@NonNull Row row) throws NodeWritingException;
 
-    long getProcessingRate();
+//    String[] getColumns() throws NodeException;
 
-    long getStartTime();
-
-    void write(Row row) throws NodeWritingException;
-
-    String[] getOutputColumns() throws NodeException;
+//    String[] getColumns() throws NodeException;
 
     default Node asNode() {
         return (Node) this;

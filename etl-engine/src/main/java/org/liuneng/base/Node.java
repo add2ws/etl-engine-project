@@ -6,7 +6,10 @@ import lombok.Setter;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.util.StrUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class Node {
@@ -19,7 +22,7 @@ public abstract class Node {
 
     protected Dataflow dataflowInstance;
 
-    private Pipe previousPipe;
+    private Pipe prevPipe;
 
     @Getter
     private final List<Pipe> nextPipes = new ArrayList<>();
@@ -31,13 +34,13 @@ public abstract class Node {
     }
 
 
-    public Optional<Pipe> getPreviousPipe() {
-        return Optional.ofNullable(previousPipe);
+    public Optional<Pipe> getPrevPipe() {
+        return Optional.ofNullable(prevPipe);
     }
 
-    public Optional<InputNode> getPreviousNode() {
-        if (this.getPreviousPipe().isPresent()) {
-            return this.getPreviousPipe().get().from();
+    public Optional<InputNode> getPrevNode() {
+        if (this.getPrevPipe().isPresent()) {
+            return this.getPrevPipe().get().from();
         } else {
             return Optional.empty();
         }
@@ -51,8 +54,8 @@ public abstract class Node {
         }
     }
 
-    protected void setPreviousPipe(Pipe previousPipe) {
-        this.previousPipe = previousPipe;
+    protected void setPrevPipe(Pipe prevPipe) {
+        this.prevPipe = prevPipe;
     }
 
     protected void setNextPipes(List<Pipe> nextPipes) {
@@ -60,7 +63,7 @@ public abstract class Node {
         this.nextPipes.addAll(nextPipes);
     }
 
-    protected void addPreviousPipe(Pipe pipe) {
+    protected void addPrevPipe(Pipe pipe) {
         nextPipes.add(pipe);
     }
 
@@ -82,17 +85,6 @@ public abstract class Node {
 
     protected void prestart(Dataflow dataflow) throws NodePrestartException {
         this.dataflowInstance = dataflow;
-
-//        dataflow.getDataTransferExecutor().execute(() -> {
-//            try {
-//                this.dataflowInstance.awaitStoppingSignal();
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            } finally {
-//                this.onStop();
-//            }
-//        });
-
     };
 
     protected abstract void onDataflowStop();

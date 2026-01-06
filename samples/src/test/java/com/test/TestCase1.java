@@ -5,17 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.liuneng.base.Dataflow;
 import org.liuneng.base.Pipe;
-import org.liuneng.exception.DataflowException;
-import org.liuneng.node.*;
-import org.liuneng.util.DataflowHelper;
+import org.liuneng.nodeextension.*;
+import org.liuneng.base.DataflowHelper;
 import org.liuneng.util.Tuple2;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
@@ -24,13 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class TestCase1 {
-
-    @Test
-    void pp() {
-        long s = (long) (1.0 * 500 / 3832 * 1000);
-
-        System.out.println(s);
-    }
 
     @Test
     void PGToFile() {
@@ -166,7 +155,7 @@ public class TestCase1 {
 
         Dataflow dataflow = new Dataflow(sqlInputNode);
 //        dataflow.setProcessingThresholdLog(100);
-        DataflowHelper.logListener(dataflow, etlLog -> {
+        DataflowHelper.of(dataflow).logListener( etlLog -> {
             System.out.println(etlLog.getMessage());
         });
         try {
@@ -184,9 +173,10 @@ public class TestCase1 {
 
     @Test
     void t1() {
-        ArrayList<Object> list = new ArrayList<>();
-        Object object = list.get(3);
-        System.out.println(object);
+        String address = "问";
+        String masked = address.replaceAll("^(.).*(.)$", "$1***$2");
+
+        System.out.println(masked);
     }
 
     @Test

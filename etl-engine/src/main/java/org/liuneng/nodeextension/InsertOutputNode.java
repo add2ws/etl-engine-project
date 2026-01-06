@@ -1,13 +1,14 @@
-package org.liuneng.node;
+package org.liuneng.nodeextension;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.liuneng.base.*;
 import org.liuneng.exception.NodeException;
 import org.liuneng.exception.NodePrestartException;
 import org.liuneng.exception.NodeWritingException;
 import org.liuneng.util.DBUtil;
-import org.liuneng.util.NodeHelper;
+import org.liuneng.base.NodeHelper;
 import org.liuneng.util.StrUtil;
 import org.liuneng.util.Tuple2;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     private long startTime;
 
     @Override
-    public void write(Row row) throws NodeWritingException {
+    public void write(@NonNull Row row) throws NodeWritingException {
         if (!isDeleted && StrUtil.isNotBlank(deleteSql)) {
             jdbcTemplate.update(deleteSql);
             isDeleted = true;
@@ -124,11 +125,10 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
 
     public List<Tuple2<String, String>> autoMapTargetColumns() throws Exception {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
-        InputNode from = this.getPreviousPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
-        String[] sourceColumns = NodeHelper.getUpstreamColumns(from);
-
+//        InputNode from = this.getPrevPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
+        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns();
         this.columnsMapping.clear();
-        for (String targetColumn : this.getOutputColumns()) {
+        for (String targetColumn : this.getTableColumns()) {
             for (String sourceColumn : sourceColumns) {
                 if (sourceColumn.equalsIgnoreCase(targetColumn)) {
                     this.columnsMapping.add(new Tuple2<>(sourceColumn, targetColumn));
@@ -166,8 +166,8 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
 
-    @Override
-    public String[] getOutputColumns() {
+//    @Override
+    public String[] getTableColumns() {
         if (columns == null) {
             try {
                 columns = DBUtil.lookupColumns(dataSource, table);
