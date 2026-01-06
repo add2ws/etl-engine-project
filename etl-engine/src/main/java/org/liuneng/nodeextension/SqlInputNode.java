@@ -136,10 +136,9 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
     }
 
     @Override
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
+    protected void onDataflowPrestart() {
         startTime = System.currentTimeMillis();
         log.info("{}[{}] start initializing...", this.getClass().getSimpleName(), super.getId());
-        super.prestart(dataflow);
         getColumns();
         log.info("{}[{}] has been initialized.", this.getClass().getSimpleName(), super.getId());
     }

@@ -419,8 +419,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
-        super.prestart(dataflow);
+    protected void onDataflowPrestart() throws NodePrestartException {
         try {
             connection = dataSource.getConnection();
 //        connection.setAutoCommit(false);

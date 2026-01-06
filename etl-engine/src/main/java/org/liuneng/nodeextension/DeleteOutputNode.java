@@ -106,11 +106,9 @@ public class DeleteOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
-        super.prestart(dataflow);
+    protected void onDataflowPrestart() throws NodePrestartException {
         try {
             this.getTableColumns();
-
             if (this.columnsMapping.isEmpty()) {
                 throw new NodePrestartException("未指定关联字段");
             }

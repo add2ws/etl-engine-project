@@ -135,8 +135,7 @@ public class FileOutputNode extends Node implements OutputNode, DataProcessingMo
     }
 
     @Override
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
-        super.prestart(dataflow);
+    protected void onDataflowPrestart() {
         File file = new File(filePath);
         try {
             fileOutputStream = new FileOutputStream(file);

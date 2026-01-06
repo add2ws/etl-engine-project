@@ -1,13 +1,12 @@
 # Etl-engine
  [中文](README.cn.md) | **English**
 
-## 🚀 Introduction: High-Performance ETL Engine
-
-**`Etl-engine`** is a lightweight, robust, and easily extensible ETL (Extract, Transform, Load) library for developers, designed to be **a high-performance alternative to Kettle (PDI)**.
+## 🚀 Etl-engine: High-Performance, Lightweight Headless ETL Framework
+Etl-engine is a lightweight, robust, and extensible Headless ETL library designed for developers. It focuses on high-concurrency and high-performance data synchronization, serving as the ideal code-level alternative to heavy, GUI-based ETL tools like Kettle (PDI).
 
 -----
 
-## 🔥 Core Advantages
+## 🔥 Core Feature
 
 **`Etl-engine`** provides the following three core features:
 
@@ -25,7 +24,9 @@ Significant improvement in data processing and database I/O speeds through **bat
 
 ### 2.Robust and Stable Operation 🛡️
 
-During the data flow transfer process, encountering an exception will not cause an immediate stop; it will **automatically attempt to re-read or re-write the data**.
+- Self-Healing: Tasks do not crash on individual data errors; it supports automatic retries and error handling to ensure stable long-running jobs.
+
+- Full-Link Logging: Provides detailed execution metrics for debugging.
 
 ### 3.Easy to Extend and Customize 🧩
 

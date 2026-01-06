@@ -81,4 +81,9 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
         isClosed = true;
         this.blockingQueue.drainTo(new ArrayList<>());
     }
+
+    @Override
+    protected void onDataflowPrestart() {
+
+    }
 }

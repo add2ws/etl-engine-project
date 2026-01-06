@@ -298,7 +298,8 @@ public class Dataflow {
     private void recursiveStartNodes(Node currentNode) {
         this.writeLogOfNode(currentNode, LogLevel.INFO, "Start initializing...");
         try {
-            currentNode.prestart(this);
+            currentNode.setDataflowInstance(this);
+            currentNode.onDataflowPrestart();
         } catch (NodePrestartException e) {
             this.writeLogOfNode(currentNode,  LogLevel.ERROR, e.getMessage(), e);
             this.tryStop(true);

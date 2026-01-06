@@ -179,9 +179,8 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
+    protected void onDataflowPrestart() {
         startTime = System.currentTimeMillis();
-        super.prestart(dataflow);
         if (columnsMapping.isEmpty()) {
             try {
                 autoMapTargetColumns();

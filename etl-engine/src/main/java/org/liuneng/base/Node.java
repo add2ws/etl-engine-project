@@ -3,7 +3,6 @@ package org.liuneng.base;
 import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
-import org.liuneng.exception.NodePrestartException;
 import org.liuneng.util.StrUtil;
 
 import java.util.ArrayList;
@@ -83,9 +82,7 @@ public abstract class Node {
         this.dataflowInstance = dataflowInstance;
     }
 
-    protected void prestart(Dataflow dataflow) throws NodePrestartException {
-        this.dataflowInstance = dataflow;
-    };
+    protected abstract void onDataflowPrestart();
 
     protected abstract void onDataflowStop();
 
