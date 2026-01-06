@@ -17,10 +17,10 @@ Significant improvement in data processing and database I/O speeds through **bat
 📊 **Real-World Test:** For an insert/update task involving $200,000$ records, the speed of `etl-engine` is **$\mathbf{2}$ times faster than Kettle**.
 
 **Kettle:**
-![1765353174408](image/README.cn/1765353174408.png)
+![1765353174408.png](https://i.postimg.cc/4N4s56pZ/1765353174408.png)
 
 **Etl-engine:**
-![1765353763090](image/README.cn/1765353763090.png)
+![1765353763090.png](https://i.postimg.cc/J47MqNjW/1765353763090.png)
 
 ### 2.Robust and Stable Operation 🛡️
 
