@@ -348,7 +348,7 @@ public class Dataflow {
         }
 
         Date now = new Date();
-        this.writeInfoLog("开始执行。。。");
+        this.writeInfoLog("Starting dataflow[ID=" + this.id + "]...");
         this.startTime = now.getTime();
         this.status = Status.RUNNING;
         try {
