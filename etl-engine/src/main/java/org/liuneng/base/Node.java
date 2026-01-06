@@ -85,17 +85,6 @@ public abstract class Node {
 
     protected void prestart(Dataflow dataflow) throws NodePrestartException {
         this.dataflowInstance = dataflow;
-
-//        dataflow.getDataTransferExecutor().execute(() -> {
-//            try {
-//                this.dataflowInstance.awaitStoppingSignal();
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            } finally {
-//                this.onStop();
-//            }
-//        });
-
     };
 
     protected abstract void onDataflowStop();

@@ -1,5 +1,6 @@
 package org.liuneng.nodeextension;
 
+import cn.hutool.json.JSONUtil;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -345,13 +346,13 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
 
 
     public List<Tuple3<String, String, UpsertTag>> autoMapTargetColumns() {
-        log.info("{} 开始自动匹配列。。。。。。", this.getId());
+        log.info("Start auto map target columns...");
         long time = System.currentTimeMillis();
-        InputNode from = this.getPrevPipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).from().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
-        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns(from);
+//        InputNode from = this.getPrevPipe().orElseThrow(() -> new NodeException("无法获得上一节点的列信息")).from().orElseThrow(() -> new NodeException("无法获得上一节点的列信息"));
+        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns();
 
         this.columnsMapping.clear();
-        for (String targetColumn : this.getOutputColumns()) {
+        for (String targetColumn : this.getColumns()) {
             for (String sourceColumn : sourceColumns) {
                 if (sourceColumn.equalsIgnoreCase(targetColumn)) {
                     this.columnsMapping.add(new Tuple3<>(sourceColumn, targetColumn, UpsertTag.COMPARE_AND_UPDATE));
@@ -360,9 +361,10 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
             }
         }
         if (this.columnsMapping.isEmpty()) {
-            throw new NodeException("自动匹配列名失败！没有一个列能匹配上。");
+            throw new NodeException("Auto map failed! No columns are matched.");
         }
-        log.info("{}自动匹配列完成，耗时{}ms", this.getId(), System.currentTimeMillis() - time);
+        log.info("Auto map completed，elapsed {}ms", System.currentTimeMillis() - time);
+        log.info(JSONUtil.toJsonPrettyStr(this.columnsMapping));
         return this.columnsMapping;
     }
 
@@ -405,7 +407,7 @@ public class UpsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    public String[] getOutputColumns() throws NodeException {
+    public String[] getColumns() throws NodeException {
         if (columns == null) {
             try {
                 columns = DBUtil.lookupColumns(dataSource, table);

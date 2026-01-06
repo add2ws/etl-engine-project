@@ -15,33 +15,24 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class OracleToPG {
 
-    static void oracleToPGUpsert() {
-        DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
-        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+    public static void main(String[] args) {
 
+
+        DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
         String sql = "SELECT * FROM ETL_BASE.T_RESIDENT_INFO WHERE 1=1 AND ROWNUM < 200000";
 //        String sql = "select * from (select * from ETL_BASE.T_RESIDENT_INFO where 1=1 order by ID) T where ROWNUM < 200000";
         SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, sql);
+
+        DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
         UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
         upsertOutputNode.setInsertOnly(true);
 //        upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
+
         Pipe pipe = new Pipe(10000);
         pipe.connect(sqlInputNode, upsertOutputNode);
 
         Dataflow dataflow = new Dataflow(sqlInputNode);
         dataflow.setProcessingThresholdLog(10000);
-//        DataflowHelper.logListener(dataflow, etlLog -> {
-//            System.out.println(etlLog.getMessage());
-//        });
-        try {
-            dataflow.syncStart(5, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    public static void main(String[] args) {
-        oracleToPGUpsert();
+        dataflow.syncStart(5, TimeUnit.MINUTES);
     }
 }

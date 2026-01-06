@@ -26,4 +26,8 @@ public class ConditionNode extends MiddleNode {
         }
     }
 
+    @Override
+    public String[] getColumns() throws NodeException {
+        return new String[0];
+    }
 }

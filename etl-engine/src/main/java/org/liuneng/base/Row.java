@@ -27,7 +27,7 @@ public class Row {
     }
 
     public static Row ofEnd() {
-        Row row = new Row(null);
+        Row row = new Row(new HashMap<>());
         row.setEnd(true);
         return row;
     }

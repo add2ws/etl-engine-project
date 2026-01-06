@@ -135,7 +135,7 @@ public class FileOutputNode extends Node implements OutputNode, DataProcessingMo
     }
 
     @Override
-    public String[] getOutputColumns() {
+    public String[] getColumns() {
         return new String[0];
     }
 

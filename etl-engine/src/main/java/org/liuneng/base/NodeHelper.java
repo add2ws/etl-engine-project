@@ -19,13 +19,13 @@ public class NodeHelper {
         return new NodeHelper(node);
     }
 
-    public String[] getUpstreamColumns(InputNode inputNode) {
+    public String[] getUpstreamColumns() {
         Set<String> columns = new LinkedHashSet<>();
-        InputNode current = inputNode;
-        do {
-            columns.addAll(Arrays.asList(current.getInputColumns()));
+        InputNode current = this.NODE.getPrevNode().orElse(null);
+        while(current != null) {
+            columns.addAll(Arrays.asList(current.getColumns()));
             current = current.asNode().getPrevNode().orElse(null);
-        } while (current != null);
+        }
 
         return columns.toArray(new String[0]);
     }

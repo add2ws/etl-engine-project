@@ -9,7 +9,8 @@ public interface InputNode {
     @NonNull
     Row read() throws NodeReadingException;
 
-    String[] getInputColumns() throws NodeException;
+    String[] getColumns() throws NodeException;
+//    String[] getColumns() throws NodeException;
 
     default Node asNode() {
         return (Node) this;

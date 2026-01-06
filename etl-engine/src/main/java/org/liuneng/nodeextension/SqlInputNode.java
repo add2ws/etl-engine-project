@@ -96,7 +96,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
     }
 
     @Override
-    public String[] getInputColumns() {
+    public String[] getColumns() {
         try {
             if (columns == null) {
                 connection = dataSource.getConnection();
@@ -140,7 +140,7 @@ public class SqlInputNode extends Node implements InputNode, DataProcessingMonit
         startTime = System.currentTimeMillis();
         log.info("{}[{}] start initializing...", this.getClass().getSimpleName(), super.getId());
         super.prestart(dataflow);
-        getInputColumns();
+        getColumns();
         log.info("{}[{}] has been initialized.", this.getClass().getSimpleName(), super.getId());
     }
 

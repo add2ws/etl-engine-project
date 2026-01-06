@@ -82,7 +82,10 @@ public class Pipe {
     }
 
     public Row beRead() throws InterruptedException {
-        return bufferQueue.take();
+        if (!closed) {
+            return bufferQueue.take();
+        }
+        throw new InterruptedException();
     }
 
     protected Dataflow getDataflowInstance() {

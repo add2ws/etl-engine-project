@@ -99,7 +99,7 @@ public class DeleteOutputNode extends Node implements OutputNode, DataProcessing
     }
 
     @Override
-    public String[] getOutputColumns() throws NodeException {
+    public String[] getColumns() throws NodeException {
         return new String[0];
     }
 
