@@ -1,6 +1,5 @@
 package org.liuneng.base;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.liuneng.exception.NodeException;
@@ -13,6 +12,8 @@ import java.util.concurrent.SynchronousQueue;
 
 @Slf4j
 public abstract class MiddleNode extends Node implements InputNode, OutputNode {
+
+    private boolean isClosed = false;
 
     public enum Type {
         COPY, SWITCH
@@ -28,6 +29,9 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
 
     @Override
     public void write(@NonNull Row row) throws NodeWritingException {
+        if (isClosed) {
+            return;
+        }
         try {
             row = process(row);
 //            String id = IdUtil.nanoId(5);
@@ -42,6 +46,10 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
     @Override
     @NonNull
     public Row read() throws NodeReadingException {
+        if (isClosed) {
+            throw new NodeReadingException("Node is closed");
+        }
+
         try {
 //            String id = IdUtil.nanoId(5);
 //            log.info("开始读取_NO[{}]" , id);
@@ -54,18 +62,8 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
     }
 
     @Override
-    public String[] getInputColumns() throws NodeException {
-        return new String[0];
-    }
-
-    @Override
     public Node asNode() {
         return InputNode.super.asNode();
-    }
-
-    @Override
-    public String[] getOutputColumns() throws NodeException {
-        return new String[0];
     }
 
     @NonNull
@@ -80,6 +78,7 @@ public abstract class MiddleNode extends Node implements InputNode, OutputNode {
 
     @Override
     protected void onDataflowStop() {
+        isClosed = true;
         this.blockingQueue.drainTo(new ArrayList<>());
     }
 }

@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.liuneng.exception.DataflowException;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -82,7 +83,10 @@ public class Pipe {
     }
 
     public Row beRead() throws InterruptedException {
-        return bufferQueue.take();
+        if (!closed) {
+            return bufferQueue.take();
+        }
+        throw new DataflowException("Pipe is closed");
     }
 
     protected Dataflow getDataflowInstance() {

@@ -8,7 +8,9 @@ public interface OutputNode {
 
     void write(@NonNull Row row) throws NodeWritingException;
 
-    String[] getOutputColumns() throws NodeException;
+//    String[] getColumns() throws NodeException;
+
+//    String[] getColumns() throws NodeException;
 
     default Node asNode() {
         return (Node) this;

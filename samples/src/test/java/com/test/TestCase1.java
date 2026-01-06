@@ -173,9 +173,10 @@ public class TestCase1 {
 
     @Test
     void t1() {
-        ArrayList<Object> list = new ArrayList<>();
-        Object object = list.get(3);
-        System.out.println(object);
+        String address = "问";
+        String masked = address.replaceAll("^(.).*(.)$", "$1***$2");
+
+        System.out.println(masked);
     }
 
     @Test

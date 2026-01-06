@@ -135,12 +135,6 @@ public class FileOutputNode extends Node implements OutputNode, DataProcessingMo
     }
 
     @Override
-    public String[] getOutputColumns() {
-        return new String[0];
-    }
-
-
-    @Override
     protected void prestart(Dataflow dataflow) throws NodePrestartException {
         super.prestart(dataflow);
         File file = new File(filePath);

@@ -125,11 +125,10 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
 
     public List<Tuple2<String, String>> autoMapTargetColumns() throws Exception {
         log.info("{} 开始自动匹配列。。。。。。", this.getId());
-        InputNode from = this.getPrevPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
-        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns(from);
-
+//        InputNode from = this.getPrevPipe().orElseThrow(() -> new Exception("无法获得上一节点的列信息")).from().orElseThrow(() -> new Exception("无法获得上一节点的列信息"));
+        String[] sourceColumns = NodeHelper.of(this).getUpstreamColumns();
         this.columnsMapping.clear();
-        for (String targetColumn : this.getOutputColumns()) {
+        for (String targetColumn : this.getTableColumns()) {
             for (String sourceColumn : sourceColumns) {
                 if (sourceColumn.equalsIgnoreCase(targetColumn)) {
                     this.columnsMapping.add(new Tuple2<>(sourceColumn, targetColumn));
@@ -167,8 +166,8 @@ public class InsertOutputNode extends Node implements OutputNode, DataProcessing
     }
 
 
-    @Override
-    public String[] getOutputColumns() {
+//    @Override
+    public String[] getTableColumns() {
         if (columns == null) {
             try {
                 columns = DBUtil.lookupColumns(dataSource, table);

@@ -98,11 +98,6 @@ public class DeleteOutputNode extends Node implements OutputNode, DataProcessing
 
     }
 
-    @Override
-    public String[] getOutputColumns() throws NodeException {
-        return new String[0];
-    }
-
     public String[] getTableColumns() throws SQLException {
         if (columns == null) {
             columns = DBUtil.lookupColumns(dataSource, table);
