@@ -3,7 +3,7 @@
 **中文** | [English](README.md)
 
 ## 🚀 Etl-engine: 高性能、轻量级 Headless ETL 引擎
-Etl-engine 是一款高效轻量、且易于扩展的 Headless ETL 库。它专注于解决高并发、高性能的数据同步需求，是 Kettle (PDI) 等 ETL 工具在代码级集成场景下的理想替代方案。
+Etl-engine 是一款高效轻量、且易于扩展的 Headless ETL 库。它用于解决高并发、高性能的数据同步需求，是 Kettle (PDI) 等 ETL 工具在代码级集成场景下的理想替代方案。
 
 -----
 
@@ -123,7 +123,7 @@ public class ValueConversionNode extends MiddleNode {
 }
 ```
 
-#### Main:
+#### Main.java:
 ```java
 // 创建Oracle数据源和表输入节点
 DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
@@ -156,8 +156,8 @@ dataflow.syncStart(5, TimeUnit.MINUTES);
 ```mermaid
 flowchart LR
   SqlInputNode --Pipe--> ConditionNode
-  ConditionNode --Pipe[0](gender=1)--> UpsertOutputNode
-  ConditionNode --Pipe[1](gender=2)--> FileOutputNode
+  ConditionNode --"Pipe[0](gender=1)"--> UpsertOutputNode
+  ConditionNode --"Pipe[1](gender=2)"--> FileOutputNode
 ```
 #### ConditionNode.java:
 ```java

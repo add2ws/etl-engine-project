@@ -158,8 +158,8 @@ dataflow.syncStart(5, TimeUnit.MINUTES);
 ```mermaid
 flowchart LR
   SqlInputNode --Pipe--> ConditionNode
-  ConditionNode --Pipe[0](gender=1)--> UpsertOutputNode
-  ConditionNode --Pipe[1](gender=2)--> FileOutputNode
+  ConditionNode --"Pipe[0](gender=1)"--> UpsertOutputNode
+  ConditionNode --"Pipe[1](gender=2)"--> FileOutputNode
 ```
 #### ConditionNode.java:
 ```java
