@@ -8,6 +8,32 @@ import java.util.Properties;
 
 public class DataSourceUtil {
 
+    public static DataSource getClickhouseDataSourcePool() {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
+        String host = "172.25.200.230";
+        int port = 8123;
+        String sid = "default";
+        String url = String.format("jdbc:ch://%s:%d/%s", host, port, sid);
+        dataSource.setJdbcUrl(url);
+        dataSource.setUsername("default");
+        dataSource.setPassword("123");
+        return dataSource;
+    }
+
+    public static DataSource getClickhouseDataSource() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
+        String host = "172.25.200.230";
+        int port = 8123;
+        String sid = "default";
+        String url = String.format("jdbc:ch://%s:%d/%s", host, port, sid);
+        dataSource.setUrl(url);
+        dataSource.setUsername("default");
+        dataSource.setPassword("123");
+        return dataSource;
+    }
+
     public static DataSource getOracleDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("oracle.jdbc.OracleDriver");

@@ -34,28 +34,31 @@ Etl-engine 是一款高效轻量、且易于扩展的 Headless ETL 库。它用�
 
 -----
 
-## 🛠️ 使用示例
+## 🛠️快速上手
+### 目标：
+将Postgres中的表数据使用插入/更新的方式导入到Clickhouse库的相同表中。
 
-以下代码展示了如何快速构建一个将 **Oracle 数据（抽取）** 通过 **Upsert 方式同步到 PostgreSQL（加载）** 的 ETL 任务。
-
-### 1\. 一个表输入到一个表输出
-
-```mermaid
-flowchart LR
-  sqlInputNode --pipe--> upsertOutputNode
+### 实现步骤：
+#### 1\. 引入Maven依赖：
+```xml
+<dependency>
+    <groupId>io.github.add2ws</groupId>
+    <artifactId>etl-engine</artifactId>
+    <version>2.4.0</version>
+</dependency>
 ```
 
+#### 2.Main.java
 ```java
-
-//创建Oracle数据源
-DataSource dataSourceOracle = DataSourceUtil.getOracleDataSource();
+//创建Postgres数据源(DataSourceUtil代码已省略)
+DataSource dataSourcePG = DataSourceUtil.getOracleDataSource();
 //创建表输入节点
-SqlInputNode sqlInputNode = new SqlInputNode(dataSourceOracle, "select * from t_resident_info");
+SqlInputNode sqlInputNode = new SqlInputNode(dataSourcePG, "select * from t_resident_info");
 
-//创建Postgres数据源
-DataSource dataSourcePG = DataSourceUtil.getPostgresDataSource();
+//创建Clickhouse数据源
+DataSource dataSourceCH = DataSourceUtil.getClickhouseDataSource();
 //创建插入/更新节点
-UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourcePG, "t_resident_info", 1000);
+UpsertOutputNode upsertOutputNode = new UpsertOutputNode(dataSourceCH, "t_resident_info", 1000);
 //设置唯一标识(主键)映射，用于判断 Insert 或 Update
 upsertOutputNode.setIdentityMapping(Arrays.asList(new Tuple2<>("ID", "ID")));
 
@@ -70,7 +73,9 @@ Dataflow dataflow = new Dataflow(sqlInputNode);
 dataflow.syncStart(5, TimeUnit.MINUTES);
 ```
 
-### 2\. 一个sql输入节点经过字段值转换到一个输出节点
+## 🛠️ 其它场景示例
+
+### 1\. 一个sql输入节点经过字段值转换到一个输出节点
 
 ```mermaid
 flowchart LR
@@ -151,7 +156,7 @@ Dataflow dataflow = new Dataflow(sqlInputNode);
 dataflow.syncStart(5, TimeUnit.MINUTES);
 ```
 
-### 3\. 一个sql输入节点经过列值判断将数据流分发到不同的输出节点
+### 2\. 一个sql输入节点经过列值判断将数据流分发到不同的输出节点
 
 ```mermaid
 flowchart LR
